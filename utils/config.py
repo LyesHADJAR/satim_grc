@@ -13,7 +13,8 @@ class ConfigManager:
         Args:
             config_path: Path to the JSON configuration file
         """
-        self.logger = logging.getLconfig
+        self.logger = logging.getLogger("config")
+        self.config = {}
         
         # Load configuration from file if provided
         if config_path and os.path.exists(config_path):

@@ -1,5 +1,7 @@
 from typing import Dict, Any, List
 import asyncio
+import re
+import logging
 from agents.base_agent import BaseAgent
 from models.policy import Policy, PolicySectionMatch
 from models.score import ComplianceScore, ScoreCriteria
@@ -7,7 +9,7 @@ from models.score import ComplianceScore, ScoreCriteria
 class PolicyComparisonAgent(BaseAgent):
     """
     Agent responsible for comparing company policies against reference frameworks
-    and generating compliance scores.
+    and generating compliance scores using real data.
     """
     
     def __init__(self, name: str, llm_config: Dict[str, Any], rag_engine: Any):
@@ -24,7 +26,7 @@ class PolicyComparisonAgent(BaseAgent):
         
     async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Process policy comparison requests.
+        Process policy comparison requests using real data.
         
         Args:
             input_data: Dictionary containing:
@@ -83,7 +85,7 @@ class PolicyComparisonAgent(BaseAgent):
         # Extract relevant sections from reference policies for this domain
         reference_sections = await self._extract_domain_sections(domain, reference_policies)
         
-        # Find gaps and overlaps
+        # Find gaps and overlaps using real data
         gaps = await self._identify_gaps(domain, company_sections, reference_sections)
         coverage = await self._calculate_coverage(domain, company_sections, reference_sections)
         
@@ -102,123 +104,188 @@ class PolicyComparisonAgent(BaseAgent):
         }
     
     async def _extract_domain_sections(self, domain: str, policies: List[Policy]) -> List[Dict[str, Any]]:
-        """Extract sections relevant to a specific domain from policies."""
-        # Prepare a prompt for the LLM to identify relevant sections
-        prompt = f"""
-        Identify and extract sections from the policies that are relevant to the domain: {domain}.
-        For each relevant section, provide:
-        1. The section title or identifier
-        2. The full section text
-        3. A confidence score (0-100) indicating how relevant this section is to the domain
-        
-        Policies to analyze:
-        {[policy.title for policy in policies]}
-        """
-        
-        # Use the RAG engine to process the policies and extract relevant sections
+        """Extract sections relevant to a specific domain from policies using real data."""
         sections = []
-        for policy in policies:
-            # This would call the LLM through your RAG system
-            # For now, we'll simulate the response
-            response = await self.rag_engine.query_llm(
-                query=prompt,
-                context=policy.content,
-                max_tokens=2000
-            )
-            
-            # Parse the response to extract sections
-            # In a real implementation, you'd have a more robust parsing logic
-            # or a structured output format from your LLM
-            parsed_sections = self._parse_sections_from_llm_response(response, policy.id)
-            sections.extend(parsed_sections)
-            
-        return sections
-    
-    def _parse_sections_from_llm_response(self, response: str, policy_id: str) -> List[Dict[str, Any]]:
-        """Parse LLM response to extract policy sections."""
-        # This is a simplified implementation
-        # In a real system, you'd have more robust parsing
-        sections = []
-        # Mock implementation - in reality this would parse structured output from the LLM
-        # For demo purposes, let's assume we got back a basic structure
-        mock_sections = [
-            {"title": "Data Classification", "text": "Sample text about data classification...", "confidence": 95},
-            {"title": "Access Controls", "text": "Sample text about access controls...", "confidence": 90}
-        ]
         
-        for section in mock_sections:
-            section["policy_id"] = policy_id
-            sections.append(section)
+        # Use semantic search to find relevant sections
+        search_results = await self.rag_engine.semantic_search(domain, top_k=10)
+        
+        # Filter results by policy IDs
+        policy_titles = [policy.title.lower() for policy in policies]
+        
+        for result in search_results:
+            document_id = result.get("document_id", "").lower()
             
+            # Check if this result belongs to one of our policies
+            if any(policy_title in document_id for policy_title in policy_titles):
+                sections.append({
+                    "title": result.get("section", "Unknown Section"),
+                    "text": result.get("content", ""),
+                    "confidence": int(result.get("similarity_score", 0) * 100),
+                    "policy_id": result.get("document_id", ""),
+                    "document_type": result.get("document_type", "unknown")
+                })
+        
         return sections
     
     async def _identify_gaps(self, domain: str, company_sections: List[Dict[str, Any]], 
                             reference_sections: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Identify gaps in company policies compared to reference frameworks."""
-        # Create a prompt for the LLM to identify gaps
-        company_section_texts = "\n\n".join([f"{s['title']}: {s['text']}" for s in company_sections])
-        reference_section_texts = "\n\n".join([f"{s['title']}: {s['text']}" for s in reference_sections])
+        """Identify gaps in company policies compared to reference frameworks using real analysis."""
         
+        # Get the actual content for analysis
+        company_content = "\n\n".join([
+            f"**{s['title']}**: {s['text'][:500]}..." 
+            for s in company_sections[:5]  # Limit to prevent token overflow
+        ])
+        
+        reference_content = "\n\n".join([
+            f"**{s['title']}**: {s['text'][:500]}..." 
+            for s in reference_sections[:5]  # Limit to prevent token overflow
+        ])
+        
+        # Create a structured prompt for gap analysis
         prompt = f"""
-        Compare the company policy sections with the reference framework sections for the domain: {domain}.
+        Analyze the following company policy sections against reference framework sections for the domain: {domain}.
         
-        Company policy sections:
-        {company_section_texts}
+        COMPANY POLICY SECTIONS:
+        {company_content}
         
-        Reference framework sections:
-        {reference_section_texts}
+        REFERENCE FRAMEWORK SECTIONS:
+        {reference_content}
         
-        Identify gaps where the company policies do not adequately address requirements or best practices 
-        defined in the reference frameworks. For each gap, provide:
-        1. A description of the gap
-        2. The severity (High, Medium, Low)
-        3. Recommendation to address the gap
+        Please identify specific gaps where the company policies do not adequately address requirements found in the reference frameworks. 
+        
+        For each gap, provide:
+        1. A clear description of what is missing
+        2. Severity level (High/Medium/Low)
+        3. Specific recommendation to address the gap
+        
+        Format your response as:
+        GAP: [description]
+        SEVERITY: [High/Medium/Low]
+        RECOMMENDATION: [specific recommendation]
+        ---
         """
         
-        # Query the LLM through the RAG engine
+        # Query the LLM for gap analysis
         response = await self.rag_engine.query_llm(prompt, max_tokens=1500)
         
-        # Parse the gaps from the LLM response
-        # In a real implementation, you'd have a more structured approach
-        gaps = self._parse_gaps_from_llm_response(response)
+        # Parse the structured response
+        gaps = self._parse_structured_gaps(response)
+        
+        # If no gaps found from LLM, perform basic keyword analysis
+        if not gaps:
+            gaps = self._perform_basic_gap_analysis(company_sections, reference_sections)
+        
         return gaps
     
-    def _parse_gaps_from_llm_response(self, response: str) -> List[Dict[str, Any]]:
-        """Parse LLM response to extract identified gaps."""
-        # Mock implementation for demo purposes
-        gaps = [
-            {
-                "description": "Company policy lacks specific guidance on data encryption at rest",
-                "severity": "High",
-                "recommendation": "Add section on encryption requirements for stored data"
-            },
-            {
-                "description": "Policy on third-party access lacks detail on validation procedures",
+    def _parse_structured_gaps(self, response: str) -> List[Dict[str, Any]]:
+        """Parse structured gap analysis response from LLM."""
+        gaps = []
+        
+        # Split response into individual gap blocks
+        gap_blocks = response.split("---")
+        
+        for block in gap_blocks:
+            if not block.strip():
+                continue
+                
+            # Extract gap information using regex
+            gap_match = re.search(r'GAP:\s*(.+?)(?=SEVERITY:|$)', block, re.DOTALL | re.IGNORECASE)
+            severity_match = re.search(r'SEVERITY:\s*(.+?)(?=RECOMMENDATION:|$)', block, re.DOTALL | re.IGNORECASE)
+            rec_match = re.search(r'RECOMMENDATION:\s*(.+?)(?=---|$)', block, re.DOTALL | re.IGNORECASE)
+            
+            if gap_match:
+                gap_desc = gap_match.group(1).strip()
+                severity = severity_match.group(1).strip() if severity_match else "Medium"
+                recommendation = rec_match.group(1).strip() if rec_match else "Review and enhance policy coverage"
+                
+                # Clean up the extracted text
+                gap_desc = re.sub(r'\s+', ' ', gap_desc)
+                recommendation = re.sub(r'\s+', ' ', recommendation)
+                
+                gaps.append({
+                    "description": gap_desc,
+                    "severity": severity,
+                    "recommendation": recommendation
+                })
+        
+        return gaps
+    
+    def _perform_basic_gap_analysis(self, company_sections: List[Dict[str, Any]], 
+                                   reference_sections: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Perform basic gap analysis using keyword matching."""
+        gaps = []
+        
+        # Extract key topics from reference sections
+        reference_topics = set()
+        company_topics = set()
+        
+        for section in reference_sections:
+            title = section.get('title', '').lower()
+            # Extract key terms from titles
+            key_terms = re.findall(r'\b[a-z]{4,}\b', title)
+            reference_topics.update(key_terms)
+        
+        for section in company_sections:
+            title = section.get('title', '').lower()
+            text = section.get('text', '').lower()
+            # Extract key terms from titles and content
+            key_terms = re.findall(r'\b[a-z]{4,}\b', title + ' ' + text)
+            company_topics.update(key_terms)
+        
+        # Find missing topics
+        missing_topics = reference_topics - company_topics
+        
+        # Generate gap descriptions for missing topics
+        for topic in list(missing_topics)[:3]:  # Limit to top 3
+            gaps.append({
+                "description": f"Company policy lacks specific coverage of {topic.replace('_', ' ')} requirements",
                 "severity": "Medium",
-                "recommendation": "Enhance third-party validation process with specific controls"
-            }
-        ]
+                "recommendation": f"Add or enhance policy sections addressing {topic.replace('_', ' ')} controls and procedures"
+            })
+        
+        # If no gaps found, add a generic analysis
+        if not gaps:
+            gaps.append({
+                "description": "Policy coverage appears adequate but may benefit from more detailed implementation guidance",
+                "severity": "Low",
+                "recommendation": "Review policy implementation procedures and add specific operational guidance"
+            })
+        
         return gaps
     
     async def _calculate_coverage(self, domain: str, company_sections: List[Dict[str, Any]], 
                                 reference_sections: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Calculate how well company policies cover reference framework requirements."""
-        # This would involve a detailed comparison of policy coverage
-        # For the demo, we'll provide a simplified implementation
+        """Calculate coverage using real section analysis."""
         
-        # Count the number of reference topics covered by company policies
+        if not reference_sections:
+            return {
+                "total_reference_topics": 0,
+                "covered_topics": 0,
+                "coverage_percentage": 0
+            }
+        
         total_reference_topics = len(reference_sections)
         covered_topics = 0
         
-        # Create a mapping of company sections to reference sections
-        # For a real implementation, this would be a more sophisticated semantic matching
-        company_section_texts = [s['title'].lower() for s in company_sections]
+        # Create sets of key terms from each section type
+        company_terms = set()
+        for section in company_sections:
+            text = (section.get('title', '') + ' ' + section.get('text', '')).lower()
+            # Extract meaningful terms
+            terms = re.findall(r'\b[a-z]{4,}\b', text)
+            company_terms.update(terms)
         
+        # Check coverage for each reference section
         for ref_section in reference_sections:
-            for company_text in company_section_texts:
-                if ref_section['title'].lower() in company_text or company_text in ref_section['title'].lower():
-                    covered_topics += 1
-                    break
+            ref_text = (ref_section.get('title', '') + ' ' + ref_section.get('text', '')).lower()
+            ref_terms = set(re.findall(r'\b[a-z]{4,}\b', ref_text))
+            
+            # Check if there's significant overlap in terms
+            overlap = len(company_terms.intersection(ref_terms))
+            if overlap >= 2:  # Require at least 2 matching terms
+                covered_topics += 1
         
         coverage_percentage = (covered_topics / total_reference_topics * 100) if total_reference_topics > 0 else 0
         
@@ -230,66 +297,79 @@ class PolicyComparisonAgent(BaseAgent):
     
     async def _match_sections(self, company_sections: List[Dict[str, Any]], 
                              reference_sections: List[Dict[str, Any]]) -> List[PolicySectionMatch]:
-        """Match company policy sections with reference framework sections."""
+        """Match company policy sections with reference framework sections using real similarity."""
         matches = []
         
-        # For each reference section, find the best matching company section
         for ref_section in reference_sections:
             best_match = None
             best_score = 0
             
-            for comp_section in company_sections:
-                # In a real implementation, use semantic similarity between sections
-                # For demo, we'll use a simple keyword match
-                similarity_score = self._calculate_similarity(ref_section['text'], comp_section['text'])
-                
-                if similarity_score > best_score:
-                    best_score = similarity_score
-                    best_match = comp_section
+            ref_text = ref_section.get('text', '').lower()
+            ref_title = ref_section.get('title', '').lower()
+            ref_terms = set(re.findall(r'\b[a-z]{4,}\b', ref_text + ' ' + ref_title))
             
-            if best_match and best_score > 0.5:  # Set a threshold for matches
+            for comp_section in company_sections:
+                comp_text = comp_section.get('text', '').lower()
+                comp_title = comp_section.get('title', '').lower()
+                comp_terms = set(re.findall(r'\b[a-z]{4,}\b', comp_text + ' ' + comp_title))
+                
+                # Calculate similarity based on term overlap
+                if ref_terms and comp_terms:
+                    overlap = len(ref_terms.intersection(comp_terms))
+                    union = len(ref_terms.union(comp_terms))
+                    similarity_score = overlap / union if union > 0 else 0
+                    
+                    if similarity_score > best_score:
+                        best_score = similarity_score
+                        best_match = comp_section
+            
+            if best_match and best_score > 0.1:  # Lower threshold for real data
                 match = PolicySectionMatch(
-                    company_section_id=best_match.get('policy_id', '') + ':' + best_match.get('title', ''),
-                    reference_section_id=ref_section.get('policy_id', '') + ':' + ref_section.get('title', ''),
+                    company_section_id=f"{best_match.get('policy_id', 'unknown')}:{best_match.get('title', 'Unknown')}",
+                    reference_section_id=f"{ref_section.get('policy_id', 'reference')}:{ref_section.get('title', 'Unknown')}",
                     match_score=best_score,
-                    alignment_notes=f"Alignment score: {best_score:.2f}"
+                    alignment_notes=f"Semantic similarity: {best_score:.2f} based on term overlap"
                 )
                 matches.append(match)
         
         return matches
     
-    def _calculate_similarity(self, text1: str, text2: str) -> float:
-        """Calculate similarity between two text sections."""
-        # This is a placeholder - in a real implementation, 
-        # you would use embeddings and cosine similarity
-        # For demo purposes, we'll return a random similarity
-        import random
-        return random.uniform(0.5, 0.95)
-    
     async def _score_domain(self, domain: str, gaps: List[Dict[str, Any]], 
                            coverage: Dict[str, Any], 
                            section_matches: List[PolicySectionMatch]) -> ComplianceScore:
-        """Calculate compliance score for a specific domain."""
-        # Count severe gaps
-        high_severity_gaps = sum(1 for gap in gaps if gap['severity'] == 'High')
+        """Calculate compliance score based on real analysis."""
         
-        # Base score starts at 100 and is reduced based on gaps and coverage
+        # Count gaps by severity
+        high_severity_gaps = sum(1 for gap in gaps if gap['severity'].lower() == 'high')
+        medium_severity_gaps = sum(1 for gap in gaps if gap['severity'].lower() == 'medium')
+        low_severity_gaps = sum(1 for gap in gaps if gap['severity'].lower() == 'low')
+        
+        # Base score calculation
         base_score = 100
         
-        # Reduce score based on coverage
+        # Coverage impact (40% weight)
         coverage_percentage = coverage.get('coverage_percentage', 0)
-        coverage_score_impact = (100 - coverage_percentage) * 0.5  # 50% weight for coverage
+        coverage_score = coverage_percentage
         
-        # Reduce score based on high severity gaps
-        gap_impact = high_severity_gaps * 10  # Each high severity gap reduces score by 10 points
+        # Gap impact (40% weight)
+        gap_penalty = (high_severity_gaps * 15) + (medium_severity_gaps * 8) + (low_severity_gaps * 3)
+        gap_score = max(0, 100 - gap_penalty)
         
-        final_score = max(0, base_score - coverage_score_impact - gap_impact)
+        # Section matching quality (20% weight)
+        if section_matches:
+            avg_match_score = sum(match.match_score for match in section_matches) / len(section_matches)
+            match_score = avg_match_score * 100
+        else:
+            match_score = 50  # Default if no matches found
         
-        # Create criteria for the score
+        # Weighted final score
+        final_score = (coverage_score * 0.4) + (gap_score * 0.4) + (match_score * 0.2)
+        
+        # Create detailed criteria
         criteria = [
-            ScoreCriteria(name="Coverage", weight=0.5, score=coverage_percentage),
-            ScoreCriteria(name="Gap Severity", weight=0.3, score=max(0, 100 - gap_impact)),
-            ScoreCriteria(name="Policy Quality", weight=0.2, score=85)  # Placeholder
+            ScoreCriteria(name="Policy Coverage", weight=0.4, score=coverage_score),
+            ScoreCriteria(name="Gap Analysis", weight=0.4, score=gap_score),
+            ScoreCriteria(name="Section Alignment", weight=0.2, score=match_score)
         ]
         
         return ComplianceScore(
@@ -302,27 +382,43 @@ class PolicyComparisonAgent(BaseAgent):
     
     def _calculate_overall_score(self, domain_results: Dict[str, Dict]) -> ComplianceScore:
         """Calculate the overall compliance score across all domains."""
+        if not domain_results:
+            return ComplianceScore(
+                domain="Overall",
+                score=0,
+                criteria=[],
+                max_score=100,
+                recommendations=["No domains analyzed"]
+            )
+        
         # Extract scores from each domain
         domain_scores = [result['score'] for result in domain_results.values()]
         
-        # Calculate the average score
-        if domain_scores:
-            avg_score = sum(score.score for score in domain_scores) / len(domain_scores)
-        else:
-            avg_score = 0
+        # Calculate weighted average (can be enhanced with domain-specific weights)
+        avg_score = sum(score.score for score in domain_scores) / len(domain_scores)
         
-        # Combine recommendations from all domains
+        # Combine all recommendations
         all_recommendations = []
         for result in domain_results.values():
             all_recommendations.extend(result['score'].recommendations)
         
-        # Create an overall score with combined recommendations
+        # Remove duplicates while preserving order
+        unique_recommendations = []
+        seen = set()
+        for rec in all_recommendations:
+            if rec not in seen:
+                unique_recommendations.append(rec)
+                seen.add(rec)
+        
+        # Create overall criteria
+        overall_criteria = [
+            ScoreCriteria(name="Average Domain Compliance", weight=1.0, score=avg_score)
+        ]
+        
         return ComplianceScore(
             domain="Overall",
             score=avg_score,
-            criteria=[
-                ScoreCriteria(name="Average Domain Compliance", weight=1.0, score=avg_score)
-            ],
+            criteria=overall_criteria,
             max_score=100,
-            recommendations=all_recommendations
+            recommendations=unique_recommendations[:10]  # Limit to top 10 recommendations
         )
