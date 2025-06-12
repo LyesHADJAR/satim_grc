@@ -19,6 +19,11 @@ target/
 .env.test.local
 .env.production.local
 .env*.local
+/env.*
+.env.development
+.env.test
+.env.production
+.env.staging
 
 # IDE and editor files
 .idea/
