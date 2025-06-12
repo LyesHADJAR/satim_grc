@@ -19,6 +19,23 @@ target/
 .env.test.local
 .env.production.local
 .env*.local
+.env.development
+.env.test
+.env.production
+.env.staging
+
+# Virtual environments - comprehensive list
+env/
+/env/
+env
+/env
+.env/
+venv/
+.venv/
+ENV/
+virtualenv/
+pyenv/
+.python-version
 
 # IDE and editor files
 .idea/
