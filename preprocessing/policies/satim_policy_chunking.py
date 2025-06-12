@@ -88,13 +88,13 @@ def process_all_policies(input_folder, output_file):
 
 
 if __name__ == "__main__":
-    input_folder = "satim_policies" 
-    output_file = "satim_chunks.json"
+    input_folder = "preprocessing\\policies\\satim_policies" 
+    output_file = "preprocessing\\policies\\satim_chunks.json"
     process_all_policies(input_folder, output_file)
 
     # cleaning
-    input_file = "satim_chunks.json"
-    output_file = "satim_chunks_cleaned.json"
+    input_file = "preprocessing\\policies\\satim_chunks.json"
+    output_file = "preprocessing\\policies\\satim_chunks_cleaned.json"
 
     with open(input_file, "r", encoding="utf-8") as f:
         chunks = json.load(f)
