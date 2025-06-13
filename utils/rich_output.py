@@ -41,7 +41,7 @@ class EnhancedRichDisplay:
         banner_text = """
 🚀 ENHANCED GRC ANALYSIS SYSTEM 🚀
 ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-🇫🇷 French Compliance Framework • 🤖 Real Gemini LLM • 📊 Dynamic Domain Discovery • 💡 Intelligent Policy Feedback
+🤖 Real Gemini LLM • 📊 Dynamic Domain Discovery • 💡 Intelligent Policy Feedback
 ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 """
         
@@ -54,7 +54,6 @@ class EnhancedRichDisplay:
         info_table.add_row("📅 Date & Time (UTC)", current_time)
         info_table.add_row("👤 Current User", "LyesHADJAR")
         info_table.add_row("🏢 Organization", "SATIM")
-        info_table.add_row("📋 Framework", "French GRC Compliance (0-5 Scale)")
         info_table.add_row("🤖 AI Engine", "Google Gemini Flash 2.0")
         info_table.add_row("🔍 Analysis Mode", "Dynamic Domain Discovery + LLM Feedback")
         
@@ -155,54 +154,6 @@ class EnhancedRichDisplay:
         
         self.console.print()
     
-    def display_french_compliance_analysis(self, domain_results: Dict[str, Any]):
-        """Display French compliance analysis results."""
-        self.console.print(Rule("[bold red]🇫🇷 French Compliance Analysis Results[/bold red]"))
-        
-        # Main results table
-        results_table = Table(title="Domain Compliance Assessment", box=box.DOUBLE_EDGE)
-        results_table.add_column("Domain", style="cyan", width=20)
-        results_table.add_column("Score", justify="center", width=10)
-        results_table.add_column("French Level", justify="center", width=15)
-        results_table.add_column("Policy Status", width=25)
-        results_table.add_column("Implementation", width=25)
-        results_table.add_column("Automation", width=20)
-        results_table.add_column("Reporting", width=20)
-        
-        for domain, result in domain_results.items():
-            score = result.get('score')
-            french_status = result.get('french_compliance_status', {})
-            
-            # Score with emoji
-            score_value = score.score if hasattr(score, 'score') else 0
-            score_emoji = "🟢" if score_value >= 75 else "🟡" if score_value >= 55 else "🔴"
-            score_display = f"{score_emoji} {score_value:.1f}"
-            
-            # French compliance level
-            compliance_level = french_status.get('overall_compliance_level', 0)
-            level_desc = french_status.get('compliance_level_description', 'Unknown')
-            level_emoji = {0: "🔴", 1: "🟠", 2: "🟡", 3: "🟢", 4: "🟢", 5: "🟢"}.get(compliance_level, "⚪")
-            level_display = f"{level_emoji} {compliance_level}/5\n{level_desc}"
-            
-            # Status details
-            policy_status = french_status.get('policy_status', {})
-            impl_status = french_status.get('implementation_status', {})
-            auto_status = french_status.get('automation_status', {})
-            report_status = french_status.get('reporting_status', {})
-            
-            results_table.add_row(
-                f"[bold]{domain.replace('_', ' ').title()}[/bold]",
-                score_display,
-                level_display,
-                f"{policy_status.get('level', 0)}/4\n{policy_status.get('description', 'Unknown')[:20]}...",
-                f"{impl_status.get('level', 0)}/4\n{impl_status.get('description', 'Unknown')[:20]}...",
-                f"{auto_status.get('level', 0)}/4\n{auto_status.get('description', 'Unknown')[:15]}...",
-                f"{report_status.get('level', 0)}/4\n{report_status.get('description', 'Unknown')[:15]}..."
-            )
-        
-        self.console.print(results_table)
-        self.console.print()
-    
     def display_gap_analysis(self, domain_results: Dict[str, Any]):
         """Display comprehensive gap analysis."""
         self.console.print(Rule("[bold yellow]🔍 Gap Analysis & Recommendations[/bold yellow]"))
@@ -281,32 +232,14 @@ class EnhancedRichDisplay:
         
         # Overall score panel
         score_value = overall_score.score if hasattr(overall_score, 'score') else 0
-        french_assessment = getattr(overall_score, 'french_assessment', {})
-        
-        overall_level = french_assessment.get('overall_compliance_level', 0)
-        level_desc = french_assessment.get('compliance_level_description', 'Unknown')
         
         score_emoji = "🟢" if score_value >= 75 else "🟡" if score_value >= 55 else "🔴"
-        level_emoji = {0: "🔴", 1: "🟠", 2: "🟡", 3: "🟢", 4: "🟢", 5: "🟢"}.get(overall_level, "⚪")
         
         overall_content = f"""
 {score_emoji} [bold]Enterprise Compliance Score:[/bold] {score_value:.1f}/100
 
-{level_emoji} [bold]French Compliance Level:[/bold] {overall_level}/5 ({level_desc})
-
 📊 [bold]Compliance Distribution:[/bold]
 """
-        
-        # Add compliance distribution
-        compliance_dist = french_summary.get('compliance_distribution', {})
-        for level in range(6):
-            if str(level) in compliance_dist:
-                dist_info = compliance_dist[str(level)]
-                count = dist_info.get('count', 0)
-                percentage = dist_info.get('percentage', 0)
-                description = dist_info.get('description', 'Unknown')
-                if count > 0:
-                    overall_content += f"\n  Level {level}: {count} domains ({percentage:.1f}%) - {description}"
         
         self.console.print(Panel(
             overall_content,
@@ -343,7 +276,6 @@ class EnhancedRichDisplay:
         summary_table.add_row("🎯 Domains Analyzed", str(total_domains))
         summary_table.add_row("🔍 Total Gaps Identified", str(total_gaps))
         summary_table.add_row("🤖 AI Engine", "Google Gemini Flash 2.0")
-        summary_table.add_row("🇫🇷 Compliance Framework", "French GRC (0-5 Scale)")
         summary_table.add_row("📊 Analysis Quality", "Real LLM with Feedback")
         
         self.console.print(Panel(
@@ -354,7 +286,7 @@ class EnhancedRichDisplay:
         
         success_message = """
 🎉 [bold green]SATIM GRC Analysis Successfully Completed![/bold green]
-📋 Comprehensive compliance assessment with French framework integration
+📋 Comprehensive compliance assessment
 💡 Intelligent policy improvement recommendations generated
 🚀 Ready for executive review and implementation planning
 """

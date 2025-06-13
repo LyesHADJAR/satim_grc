@@ -122,7 +122,6 @@ async def test_enhanced_vector_system():
         # Display results if Rich is available
         if RICH_AVAILABLE and 'display' in locals():
             display.display_domain_discovery_results(results.get("discovered_domains", {}))
-            display.display_french_compliance_analysis(results.get("domain_results", {}))
             display.display_gap_analysis(results.get("domain_results", {}))
         
         # PHASE 2: Enhanced Feedback Generation
