@@ -1,16 +1,13 @@
 """
-Enhanced Test System with Rich Output and LLM Feedback
-Current Date: 2025-06-13 15:28:46 UTC
+Enhanced Test System with Vector Search and International Law Context
+Current Date: 2025-06-13 20:26:29 UTC
 Current User: LyesHADJAR
 """
 import asyncio
-import logging
 import sys
 import os
-import json
 import time
 from datetime import datetime, timezone
-from typing import Any, Dict
 
 # Add the parent directory to sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -18,43 +15,39 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from agents.policy_comparison_agent import EnhancedPolicyComparisonAgent
 from agents.policy_feedback_agent import IntelligentPolicyFeedbackAgent
 from agents.communication_protocol import AgentCommunicationProtocol
-from rag.query_engine import EnhancedRAGQueryEngine
-from utils.rich_output import EnhancedRichDisplay
+from rag.query_engine import InternationalLawEnhancedRAGEngine
+from utils.logging_config import setup_logging, log_analysis_stage, log_domain_analysis, log_performance
 
-async def test_enhanced_grc_system():
-    """Test the complete enhanced GRC system with rich output and LLM feedback."""
+# Try to import rich for enhanced output
+try:
+    from utils.rich_output import EnhancedRichDisplay
+    RICH_AVAILABLE = True
+except ImportError:
+    RICH_AVAILABLE = False
+
+async def test_enhanced_vector_system():
+    """Test the enhanced system with vector search and international law context."""
     
-    # Initialize rich display
-    rich_display = EnhancedRichDisplay()
+    # Setup enhanced logging
+    setup_logging(log_level="INFO", enable_console=True)
     
-    # Display startup
-    rich_display.display_startup_banner()
+    # Initialize display
+    if RICH_AVAILABLE:
+        display = EnhancedRichDisplay()
+        display.display_startup_banner()
+    else:
+        print("🚀 ENHANCED SATIM GRC SYSTEM WITH VECTOR SEARCH")
+        print("=" * 80)
     
-    # System initialization
-    components = [
-        "Enhanced RAG Query Engine",
-        "French Compliance Framework",
-        "Dynamic Domain Discovery",
-        "Policy Comparison Agent", 
-        "Intelligent Feedback Agent",
-        "Communication Protocol",
-        "Real Gemini LLM Integration"
-    ]
-    
-    rich_display.display_system_initialization(components)
-    
-    # Setup logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[logging.FileHandler('grc_analysis.log'), logging.StreamHandler()]
-    )
+    log_analysis_stage("STARTUP", "Enhanced SATIM GRC Analysis with Vector Search and International Law Context")
     
     # API key verification
     api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_AI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     if not api_key:
-        rich_display.console.print("❌ [red]CRITICAL: Gemini API key not found![/red]")
+        log_analysis_stage("ERROR", "CRITICAL: Gemini API key not found!", "ERROR")
         return
+    
+    log_analysis_stage("CONFIG", f"Gemini API configured: {api_key[:10]}...{api_key[-4:]}")
     
     # Set up data paths
     base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -63,76 +56,79 @@ async def test_enhanced_grc_system():
         "reference_policies": os.path.join(base_path, "preprocessing", "norms", "international_norms", "pci_dss_chunks.json")
     }
     
+    # Verify data files
+    for name, path in data_paths.items():
+        if os.path.exists(path):
+            log_analysis_stage("DATA", f"✅ {name}: {path}")
+        else:
+            log_analysis_stage("ERROR", f"❌ {name}: FILE NOT FOUND - {path}", "ERROR")
+            return
+    
     try:
-        analysis_start_time = time.time()
+        overall_start_time = time.time()
         
-        # Initialize systems
-        rag_engine = EnhancedRAGQueryEngine(
+        # Initialize enhanced systems
+        log_analysis_stage("INIT", "Initializing Enhanced RAG Engine with Vector Search")
+        rag_engine = InternationalLawEnhancedRAGEngine(
             llm_config={
                 "provider": "gemini",
-                "model": "gemini-1.5-flash",  # Using stable model for reliability
+                "model": "gemini-1.5-flash",
                 "temperature": 0.2,
-                "max_tokens": 3000,
+                "max_tokens": 4000,
                 "api_key": api_key
             },
             data_paths=data_paths
         )
         
+        log_analysis_stage("INIT", "Initializing Communication Protocol")
         communication_protocol = AgentCommunicationProtocol()
         
-        # Initialize main analysis agent
+        log_analysis_stage("INIT", "Initializing Policy Comparison Agent")
         policy_agent = EnhancedPolicyComparisonAgent(
-            name="french_compliance_agent",
+            name="enhanced_policy_agent",
             llm_config={"provider": "gemini", "model": "gemini-1.5-flash", "api_key": api_key},
             rag_engine=rag_engine,
             communication_protocol=communication_protocol
         )
         
-        # Initialize feedback agent
+        log_analysis_stage("INIT", "Initializing Intelligent Feedback Agent")
         feedback_agent = IntelligentPolicyFeedbackAgent(
-            name="policy_feedback_agent",
+            name="enhanced_feedback_agent",
             llm_config={"provider": "gemini", "model": "gemini-1.5-flash", "api_key": api_key},
             rag_engine=rag_engine,
             communication_protocol=communication_protocol
         )
         
-        # Test configuration - limit domains for speed
+        # Test configuration
         input_data = {
             "company_policy_ids": ["satim"],
             "reference_policy_ids": ["pci-dss"],
-            "domains": ["access_control", "data_protection", "incident_response"]  # 3 domains for comprehensive analysis
+            "domains": ["access_control", "data_protection", "incident_response"]
         }
         
-        rich_display.console.print("🔄 [cyan]Running comprehensive GRC analysis...[/cyan]")
+        log_analysis_stage("ANALYSIS", "Starting comprehensive GRC analysis with vector search")
         
-        # PHASE 1: Domain Discovery and Analysis
-        rich_display.console.print("\n📊 [bold]PHASE 1: Policy Analysis[/bold]")
+        # PHASE 1: Enhanced Policy Analysis with Vector Search
+        log_analysis_stage("PHASE_1", "Policy Analysis with International Law Context")
+        phase1_start = time.time()
+        
         results = await policy_agent.process(input_data)
         
-        # Display discovery results
-        rich_display.display_domain_discovery_results(results.get("discovered_domains", {}))
-        rich_display.display_expertise_extraction(results.get("extracted_domain_expertise", {}))
+        log_performance("Phase 1 - Policy Analysis", time.time() - phase1_start, {
+            "domains_analyzed": len(results.get("domain_results", {})),
+            "discovered_domains": len(results.get("discovered_domains", {}))
+        })
         
-        # Display French compliance analysis
-        rich_display.display_french_compliance_analysis(results.get("domain_results", {}))
+        # Display results if Rich is available
+        if RICH_AVAILABLE and 'display' in locals():
+            display.display_domain_discovery_results(results.get("discovered_domains", {}))
+            display.display_french_compliance_analysis(results.get("domain_results", {}))
+            display.display_gap_analysis(results.get("domain_results", {}))
         
-        # Display gap analysis
-        rich_display.display_gap_analysis(results.get("domain_results", {}))
+        # PHASE 2: Enhanced Feedback Generation
+        log_analysis_stage("PHASE_2", "Intelligent Policy Improvement Feedback")
+        phase2_start = time.time()
         
-        # Display strategic insights
-        rich_display.display_strategic_insights(results.get("domain_results", {}))
-        
-        # Display overall assessment
-        rich_display.display_overall_assessment(
-            results.get("overall_score", {}),
-            results.get("french_compliance_summary", {})
-        )
-        
-        # PHASE 2: Intelligent LLM Feedback Generation
-        rich_display.console.print("\n🤖 [bold]PHASE 2: Intelligent Policy Improvement Feedback[/bold]")
-        rich_display.display_llm_feedback_generation()
-        
-        # Generate intelligent feedback
         feedback_input = {
             "domain_results": results.get("domain_results", {}),
             "overall_score": results.get("overall_score", {}),
@@ -141,196 +137,95 @@ async def test_enhanced_grc_system():
         
         feedback_results = await feedback_agent.process(feedback_input)
         
-        # Display feedback results with rich formatting
-        rich_display.console.print("✅ [green]Policy improvement recommendations generated![/green]\n")
+        log_performance("Phase 2 - Feedback Generation", time.time() - phase2_start, {
+            "recommendations_generated": len(feedback_results.get("improvement_recommendations", {}))
+        })
         
-        # Display improvement recommendations
-        await display_improvement_recommendations(rich_display, feedback_results)
+        # PHASE 3: Vector Search Demonstration
+        log_analysis_stage("PHASE_3", "Vector Search Demonstration")
+        phase3_start = time.time()
         
-        # Display executive action plan
-        await display_executive_action_plan(rich_display, feedback_results)
+        # Test vector search capabilities
+        search_queries = [
+            "access control authentication requirements",
+            "data encryption protection standards",
+            "incident response procedures",
+            "PCI DSS compliance requirements",
+            "French regulatory requirements"
+        ]
         
-        # Display implementation roadmap
-        await display_implementation_roadmap(rich_display, feedback_results)
+        for query in search_queries:
+            log_analysis_stage("SEARCH", f"Testing vector search: {query}")
+            search_results = await rag_engine.semantic_search(query, top_k=3)
+            
+            log_performance(f"Vector Search - {query[:20]}...", 0.1, {
+                "results_found": len(search_results),
+                "avg_relevance": sum(r.get('enhanced_similarity_score', 0) for r in search_results) / len(search_results) if search_results else 0
+            })
+            
+            for i, result in enumerate(search_results[:2], 1):
+                regulatory_context = result.get('regulatory_context', {})
+                standards = regulatory_context.get('identified_standards', [])
+                log_analysis_stage("SEARCH", f"  Result {i}: {result['section'][:50]}... | Standards: {', '.join(standards)}")
         
-        # Calculate analysis duration
-        analysis_duration = time.time() - analysis_start_time
+        log_performance("Phase 3 - Vector Search Demo", time.time() - phase3_start)
         
-        # Display completion summary
-        total_domains = len(results.get("domain_results", {}))
-        total_gaps = sum(len(domain_result.get("gaps", [])) for domain_result in results.get("domain_results", {}).values())
+        # Summary and Results
+        total_duration = time.time() - overall_start_time
         
-        rich_display.display_completion_summary(analysis_duration, total_domains, total_gaps)
+        log_analysis_stage("SUMMARY", "Analysis Complete - Generating Summary")
         
-        # Save results to file
-        await save_results_to_file(results, feedback_results)
+        # Generate summary statistics
+        domain_results = results.get("domain_results", {})
+        total_domains = len(domain_results)
+        total_gaps = sum(len(domain_result.get("gaps", [])) for domain_result in domain_results.values())
+        
+        overall_score = results.get("overall_score", {})
+        enterprise_score = overall_score.score if hasattr(overall_score, 'score') else 0
+        
+        french_summary = results.get("french_compliance_summary", {})
+        overall_french = french_summary.get("overall_french_compliance", {})
+        compliance_level = overall_french.get("overall_compliance_level", 0)
+        
+        # Log final summary
+        log_analysis_stage("RESULTS", f"Enterprise Compliance Score: {enterprise_score:.1f}/100")
+        log_analysis_stage("RESULTS", f"French Compliance Level: {compliance_level}/5")
+        log_analysis_stage("RESULTS", f"Domains Analyzed: {total_domains}")
+        log_analysis_stage("RESULTS", f"Total Gaps Identified: {total_gaps}")
+        
+        log_performance("Complete Analysis", total_duration, {
+            "domains": total_domains,
+            "gaps": total_gaps,
+            "compliance_score": enterprise_score,
+            "french_level": compliance_level
+        })
+        
+        # Display final results if Rich is available
+        if RICH_AVAILABLE and 'display' in locals():
+            display.display_overall_assessment(overall_score, french_summary)
+            display.display_completion_summary(total_duration, total_domains, total_gaps)
+        else:
+            print(f"\n✅ ANALYSIS COMPLETE")
+            print(f"📊 Enterprise Score: {enterprise_score:.1f}/100")
+            print(f"🇫🇷 French Level: {compliance_level}/5")
+            print(f"⏱️ Duration: {total_duration:.1f}s")
+            print(f"🎯 Domains: {total_domains} | Gaps: {total_gaps}")
+        
+        log_analysis_stage("SUCCESS", "🎉 SATIM GRC Analysis Successfully Completed with Enhanced Vector Search!")
         
         return results, feedback_results
         
     except Exception as e:
-        rich_display.console.print(f"❌ [red]Error during enhanced analysis: {e}[/red]")
+        log_analysis_stage("ERROR", f"Analysis failed: {e}", "ERROR")
         import traceback
         traceback.print_exc()
 
-async def display_improvement_recommendations(rich_display: EnhancedRichDisplay, feedback_results: Dict[str, Any]):
-    """Display improvement recommendations with rich formatting."""
-    
-    from rich.table import Table
-    from rich.panel import Panel
-    from rich import box
-    
-    rich_display.console.print(rich_display.console.rule("[bold green]💡 Policy Improvement Recommendations[/bold green]"))
-    
-    recommendations = feedback_results.get("improvement_recommendations", {})
-    
-    for domain, domain_recs in recommendations.items():
-        if not domain_recs:
-            continue
-        
-        # Create table for this domain
-        rec_table = Table(title=f"{domain.replace('_', ' ').title()} Recommendations", box=box.ROUNDED)
-        rec_table.add_column("ID", style="cyan", width=15)
-        rec_table.add_column("Priority", justify="center", width=10)
-        rec_table.add_column("Target State", style="green", width=40)
-        rec_table.add_column("Timeline", justify="center", width=15)
-        rec_table.add_column("Expected Impact", style="yellow", width=25)
-        
-        for rec in domain_recs[:3]:  # Show top 3 recommendations
-            priority_emoji = {
-                "Critical": "🔴", "High": "🟠", "Medium": "🟡", "Low": "🟢"
-            }.get(rec.priority, "⚪")
-            
-            rec_table.add_row(
-                rec.recommendation_id,
-                f"{priority_emoji} {rec.priority}",
-                rec.target_state[:37] + "..." if len(rec.target_state) > 40 else rec.target_state,
-                rec.timeline,
-                rec.expected_impact[:22] + "..." if len(rec.expected_impact) > 25 else rec.expected_impact
-            )
-        
-        rich_display.console.print(rec_table)
-        rich_display.console.print()
-
-async def display_executive_action_plan(rich_display: EnhancedRichDisplay, feedback_results: Dict[str, Any]):
-    """Display executive action plan."""
-    
-    from rich.panel import Panel
-    from rich.table import Table
-    from rich import box
-    
-    rich_display.console.print(rich_display.console.rule("[bold purple]🏆 Executive Action Plan[/bold purple]"))
-    
-    action_plan = feedback_results.get("executive_action_plan", {})
-    
-    # Executive summary panel
-    exec_summary = action_plan.get("executive_summary", "No executive summary available")
-    rich_display.console.print(Panel(
-        exec_summary,
-        title="[bold purple]Executive Summary[/bold purple]",
-        border_style="purple"
-    ))
-    
-    # Action plan details table
-    plan_table = Table(title="Action Plan Overview", box=box.DOUBLE_EDGE)
-    plan_table.add_column("Metric", style="bold cyan", width=30)
-    plan_table.add_column("Value", style="green", width=50)
-    
-    plan_table.add_row("📊 Total Recommendations", str(action_plan.get("total_recommendations", 0)))
-    plan_table.add_row("🔴 High Priority Items", str(action_plan.get("high_priority_count", 0)))
-    plan_table.add_row("⏱️ Implementation Timeline", action_plan.get("estimated_timeline", "Unknown"))
-    plan_table.add_row("💰 Investment Level", action_plan.get("estimated_investment", "Unknown"))
-    plan_table.add_row("📈 Expected Improvement", action_plan.get("expected_compliance_improvement", "Unknown"))
-    
-    rich_display.console.print(plan_table)
-    rich_display.console.print()
-
-async def display_implementation_roadmap(rich_display: EnhancedRichDisplay, feedback_results: Dict[str, Any]):
-    """Display implementation roadmap."""
-    
-    from rich.tree import Tree
-    from rich.panel import Panel
-    
-    rich_display.console.print(rich_display.console.rule("[bold blue]🗺️ Implementation Roadmap[/bold blue]"))
-    
-    roadmap = feedback_results.get("implementation_roadmap", {})
-    phases = roadmap.get("roadmap_phases", {})
-    
-    # Create roadmap tree
-    roadmap_tree = Tree("🗺️ [bold]SATIM Policy Implementation Roadmap[/bold]")
-    
-    phase_config = {
-        "critical_immediate": ("🔴 Critical & Immediate (0-3 months)", "red"),
-        "high_short_term": ("🟠 High Priority Short-term (3-6 months)", "orange3"),
-        "medium_medium_term": ("🟡 Medium Priority Medium-term (6-12 months)", "yellow"),
-        "low_long_term": ("🟢 Low Priority Long-term (12+ months)", "green")
-    }
-    
-    for phase_key, (phase_name, style) in phase_config.items():
-        phase_recs = phases.get(phase_key, [])
-        if phase_recs:
-            phase_branch = roadmap_tree.add(f"[{style}]{phase_name}[/{style}] ({len(phase_recs)} items)")
-            
-            for rec in phase_recs[:3]:  # Show top 3 per phase
-                phase_branch.add(f"[dim]{rec.recommendation_id}:[/dim] {rec.target_state[:50]}...")
-    
-    rich_display.console.print(roadmap_tree)
-    
-    # Resource requirements
-    resources = roadmap.get("resource_requirements", {})
-    most_needed = resources.get("most_needed_resources", [])
-    
-    if most_needed:
-        resource_content = "\n".join([
-            f"• {resource}: {count} recommendations" 
-            for resource, count in most_needed[:5]
-        ])
-        
-        rich_display.console.print(Panel(
-            resource_content,
-            title="[bold]🔧 Key Resource Requirements[/bold]",
-            border_style="blue"
-        ))
-    
-    rich_display.console.print()
-
-async def save_results_to_file(analysis_results: Dict[str, Any], feedback_results: Dict[str, Any]):
-    """Save comprehensive results to JSON file."""
-    
-    timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
-    filename = f"satim_grc_analysis_{timestamp}.json"
-    
-    combined_results = {
-        "analysis_timestamp": datetime.now(timezone.utc).isoformat(),
-        "organization": "SATIM",
-        "user": "LyesHADJAR",
-        "analysis_results": analysis_results,
-        "feedback_results": feedback_results,
-        "system_version": "Enhanced GRC v2.0 with Rich Output & LLM Feedback"
-    }
-    
-    try:
-        # Convert objects to serializable format
-        def make_serializable(obj):
-            if hasattr(obj, '__dict__'):
-                return obj.__dict__
-            return str(obj)
-        
-        with open(filename, 'w', encoding='utf-8') as f:
-            json.dump(combined_results, f, indent=2, default=make_serializable, ensure_ascii=False)
-        
-        print(f"📄 Results saved to: {filename}")
-        
-    except Exception as e:
-        print(f"❌ Failed to save results: {e}")
-
 if __name__ == "__main__":
-    print("🚀 ENHANCED GRC SYSTEM WITH RICH OUTPUT & LLM FEEDBACK")
-    print("=" * 80)
-    print("✅ Rich terminal output with tables, panels, and progress bars")
-    print("✅ Intelligent policy improvement recommendations") 
-    print("✅ Executive action plans and implementation roadmaps")
-    print("✅ Real Gemini LLM feedback for SATIM policy enhancement")
-    print("✅ French compliance framework integration")
+    print("🚀 ENHANCED SATIM GRC SYSTEM")
+    print("✅ Vector search with FAISS integration")
+    print("✅ International law and regulatory context")
+    print("✅ Enhanced logging with performance tracking")
+    print("✅ LLM responses with regulatory expertise")
     print("")
     
-    asyncio.run(test_enhanced_grc_system())
+    asyncio.run(test_enhanced_vector_system())

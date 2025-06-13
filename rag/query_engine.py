@@ -1,20 +1,18 @@
 """
-Enhanced RAG Query Engine with real LLM integration and advanced capabilities
+Enhanced RAG Query Engine with Vector Search and International Law Context
+Current Date: 2025-06-13 20:26:29 UTC
+Current User: LyesHADJAR
 """
 from typing import Dict, Any, List, Optional
 import asyncio
 import logging
 import json
 import os
-from .document_loader import DocumentLoader
+import time
+from datetime import datetime, timezone
 
-# Load environment variables from .env file
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass
-
+from .vector_search_service import EnhancedVectorSearchService
+from utils.logging_config import log_llm_interaction, log_performance, log_analysis_stage
 # Import Google Gemini
 try:
     import google.generativeai as genai
@@ -22,45 +20,39 @@ try:
 except ImportError:
     HAS_GEMINI = False
 
-class EnhancedRAGQueryEngine:
-    """Enhanced RAG system with real LLM integration and no fallbacks."""
+class InternationalLawEnhancedRAGEngine:
+    """Enhanced RAG system with vector search and international law expertise."""
     
     def __init__(self, 
                  llm_config: Dict[str, Any], 
-                 embedding_config: Dict[str, Any] = None,
-                 vector_db_config: Dict[str, Any] = None,
                  data_paths: Dict[str, str] = None):
         
         self.llm_config = llm_config
-        self.embedding_config = embedding_config or {}
-        self.vector_db_config = vector_db_config or {}
-        self.logger = logging.getLogger("rag.enhanced_query_engine")
+        self.logger = logging.getLogger("rag.enhanced_engine")
         
         # Set up data paths
         if data_paths is None:
-            base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             data_paths = {
                 "company_policies": os.path.join(base_path, "preprocessing", "policies", "satim_chunks_cleaned.json"),
                 "reference_policies": os.path.join(base_path, "preprocessing", "norms", "international_norms", "pci_dss_chunks.json")
             }
         
-        self.logger.info(f"Company policies: {data_paths.get('company_policies')}")
-        self.logger.info(f"Reference policies: {data_paths.get('reference_policies')}")
+        # Initialize vector search service
+        log_analysis_stage("INITIALIZATION", "Setting up vector search service")
+        start_time = time.time()
+        self.vector_search = EnhancedVectorSearchService(data_paths)
+        log_performance("Vector Search Initialization", time.time() - start_time, 
+                       self.vector_search.get_document_stats())
         
-        # Initialize document loader
-        self.document_loader = DocumentLoader(data_paths)
-        
-        # Initialize LLM client - NO FALLBACKS
+        # Initialize LLM client
         self._init_gemini_client()
         
         if not self.gemini_available:
-            raise RuntimeError(
-                "Gemini LLM is required for analysis. Please set GEMINI_API_KEY environment variable. "
-                "No mock analysis is available."
-            )
+            raise RuntimeError("Gemini LLM is required for analysis.")
     
     def _init_gemini_client(self):
-        """Initialize Gemini client - fail if not available."""
+        """Initialize Gemini client with enhanced configuration."""
         self.gemini_model = None
         self.gemini_available = False
         
@@ -77,14 +69,46 @@ class EnhancedRAGQueryEngine:
             )
             
             if not api_key:
-                self.logger.error("No Gemini API key found in environment variables")
+                self.logger.error("No Gemini API key found")
                 return
-            
-            print(f"✅ Found API key: {api_key[:10]}...{api_key[-4:]}")
             
             genai.configure(api_key=api_key)
             
-            model_name = self.llm_config.get("model", "gemini-2.0-flash-exp")
+            model_name = self.llm_config.get("model", "gemini-1.5-flash")
+            
+            # Enhanced system instruction with international law expertise
+            system_instruction = """You are an expert GRC compliance analyst with deep expertise in international regulatory frameworks and compliance standards.
+
+YOUR EXPERTISE INCLUDES:
+- International compliance frameworks (PCI DSS, ISO 27001, SOX, GDPR, etc.)
+- French regulatory requirements and compliance standards
+- Cross-border compliance and regulatory harmonization
+- Risk assessment and gap analysis methodologies
+- Policy development and implementation best practices
+- Regulatory interpretation and practical application
+
+ANALYSIS APPROACH:
+1. Always reference specific regulatory requirements and standards when making recommendations
+2. Provide quantitative assessments with clear scoring rationale
+3. Consider international best practices and benchmark against global standards
+4. Identify specific regulatory citations and compliance obligations
+5. Offer actionable, implementable recommendations with clear timelines
+6. Consider cultural and jurisdictional context (especially French regulatory environment)
+
+OUTPUT REQUIREMENTS:
+- Be specific and actionable in all recommendations
+- Quantify risks and compliance gaps with clear metrics
+- Reference international standards and regulatory requirements
+- Provide implementation guidance with realistic timelines
+- Consider resource requirements and organizational constraints
+- Maintain professional, authoritative tone suitable for executive presentation
+
+FRENCH COMPLIANCE CONTEXT:
+- Understand French regulatory environment and compliance expectations
+- Consider CNIL, ANSSI, and other French regulatory bodies
+- Align with French data protection and cybersecurity requirements
+- Respect French business culture and organizational structures"""
+
             self.gemini_model = genai.GenerativeModel(
                 model_name=model_name,
                 generation_config=genai.types.GenerationConfig(
@@ -93,226 +117,402 @@ class EnhancedRAGQueryEngine:
                     top_p=self.llm_config.get("top_p", 0.8),
                     top_k=self.llm_config.get("top_k", 40)
                 ),
-                system_instruction="""You are an expert GRC compliance analyst specializing in policy analysis, gap assessment, and regulatory compliance. 
-
-Your expertise includes:
-- Deep analysis of policy documents and regulatory standards
-- Identification of compliance gaps and risks
-- Quantitative assessment of policy coverage and alignment
-- Strategic recommendations for compliance improvement
-- Understanding of frameworks like PCI DSS, ISO 27001, SOX, GDPR
-
-Provide detailed, accurate, and actionable analysis. Use structured output with clear sections, specific metrics, and evidence-based recommendations. Always quantify your assessments where possible."""
+                system_instruction=system_instruction
             )
             
             self.gemini_available = True
-            self.logger.info(f"✅ Gemini Flash 2.0 initialized successfully")
-            print(f"✅ Gemini Flash 2.0 initialized with model: {model_name}")
+            self.logger.info(f"✅ Enhanced Gemini initialized with international law expertise: {model_name}")
             
         except Exception as e:
             self.logger.error(f"Gemini initialization failed: {e}")
             self.gemini_available = False
     
-    async def get_document(self, doc_id: str) -> Dict[str, Any]:
-        """Get document with enhanced mapping."""
-        self.logger.info(f"Retrieving document: {doc_id}")
+    async def semantic_search(self, query: str, top_k: int = 5, 
+                            doc_types: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+        """
+        Enhanced semantic search with international law context.
         
-        doc_id_mapping = {
-            "satim": "satim",
-            "company_policies": "satim",
-            "access control": "satim access control policy",
-            "incident response": "satim incident response policy",
-            "pci-dss": "pci-dss v4.0.1",
-            "reference_policies": "pci-dss v4.0.1"
+        Args:
+            query: Search query
+            top_k: Number of results to return
+            doc_types: Document types to search
+            
+        Returns:
+            List of enhanced search results with regulatory context
+        """
+        start_time = time.time()
+        
+        # Enhance query with international law context
+        enhanced_query = self._enhance_query_with_regulatory_context(query)
+        
+        # Perform vector search
+        results = self.vector_search.semantic_search(
+            enhanced_query, 
+            doc_types=doc_types, 
+            top_k=top_k * 2,  # Get more results for better filtering
+            method='hybrid'
+        )
+        
+        # Enhance results with regulatory context
+        enhanced_results = []
+        for result in results[:top_k]:
+            enhanced_result = self._enhance_result_with_context(result, query)
+            enhanced_results.append(enhanced_result)
+        
+        log_performance("Enhanced Semantic Search", time.time() - start_time, {
+            "query_length": len(query),
+            "results_found": len(enhanced_results),
+            "doc_types": doc_types or "all"
+        })
+        
+        return enhanced_results
+    
+    def _enhance_query_with_regulatory_context(self, query: str) -> str:
+        """Enhance query with regulatory and compliance context."""
+        
+        # Add regulatory context keywords based on query content
+        regulatory_enhancements = []
+        
+        # Detect domain-specific context
+        if "access" in query.lower() or "authentication" in query.lower():
+            regulatory_enhancements.extend([
+                "access control standards", "authentication requirements", 
+                "identity management", "authorization controls"
+            ])
+        
+        if "data" in query.lower() or "information" in query.lower():
+            regulatory_enhancements.extend([
+                "data protection", "information security", "privacy requirements",
+                "data classification", "encryption standards"
+            ])
+        
+        if "incident" in query.lower() or "response" in query.lower():
+            regulatory_enhancements.extend([
+                "incident response procedures", "breach notification",
+                "security incident management", "forensics"
+            ])
+        
+        if "risk" in query.lower():
+            regulatory_enhancements.extend([
+                "risk assessment", "risk management", "vulnerability management",
+                "threat analysis", "risk mitigation"
+            ])
+        
+        # Add international framework context
+        framework_keywords = [
+            "ISO 27001", "PCI DSS", "NIST", "regulatory compliance",
+            "international standards", "best practices"
+        ]
+        
+        # Combine original query with enhancements
+        if regulatory_enhancements:
+            enhanced_query = f"{query} {' '.join(regulatory_enhancements[:3])} {' '.join(framework_keywords[:2])}"
+        else:
+            enhanced_query = f"{query} regulatory compliance international standards"
+        
+        return enhanced_query
+    
+    def _enhance_result_with_context(self, result: Dict[str, Any], original_query: str) -> Dict[str, Any]:
+        """Enhance search result with regulatory context and analysis."""
+        
+        content = result.get('content', '')
+        
+        # Identify regulatory references in content
+        regulatory_refs = self._extract_regulatory_references(content)
+        
+        # Assess compliance relevance
+        compliance_relevance = self._assess_compliance_relevance(content, original_query)
+        
+        # Enhanced result
+        enhanced_result = {
+            **result,
+            'regulatory_context': {
+                'identified_standards': regulatory_refs.get('standards', []),
+                'compliance_areas': regulatory_refs.get('compliance_areas', []),
+                'regulatory_citations': regulatory_refs.get('citations', []),
+                'compliance_relevance_score': compliance_relevance
+            },
+            'international_law_context': self._get_international_law_context(content),
+            'enhanced_similarity_score': result.get('similarity_score', 0) * (1 + compliance_relevance * 0.3)
         }
         
-        actual_doc_id = doc_id_mapping.get(doc_id.lower(), doc_id)
-        document = self.document_loader.get_document_by_id(actual_doc_id)
-        
-        if document:
-            self.logger.info(f"✅ Document found: {document['title']}")
-            return document
-        else:
-            # Fallback search
-            search_results = self.document_loader.search_documents(doc_id, top_k=3)
-            if search_results:
-                combined_content = "\n\n".join([r["chunk"].get("text", "") for r in search_results])
-                return {
-                    "title": search_results[0]["chunk"].get("document", "Unknown"),
-                    "content": combined_content,
-                    "metadata": {"search_fallback": True}
-                }
-            else:
-                return {"title": "Not Found", "content": "", "metadata": {}}
+        return enhanced_result
     
-    async def query_llm(self, query: str, context: str = "", max_tokens: int = 2000) -> str:
-        """Query LLM with real Gemini integration."""
-        self.logger.info(f"LLM Query: \n{query[:100]}...")
+    def _extract_regulatory_references(self, content: str) -> Dict[str, List[str]]:
+        """Extract regulatory references and standards from content."""
+        
+        import re
+        
+        # Standard patterns
+        standards = []
+        compliance_areas = []
+        citations = []
+        
+        # ISO standards
+        iso_pattern = r'ISO\s*(\d+)'
+        iso_matches = re.findall(iso_pattern, content, re.IGNORECASE)
+        standards.extend([f"ISO {match}" for match in iso_matches])
+        
+        # PCI DSS references
+        if re.search(r'PCI\s*DSS', content, re.IGNORECASE):
+            standards.append("PCI DSS")
+        
+        # NIST references
+        if re.search(r'NIST', content, re.IGNORECASE):
+            standards.append("NIST")
+        
+        # GDPR references
+        if re.search(r'GDPR', content, re.IGNORECASE):
+            standards.append("GDPR")
+        
+        # Compliance areas
+        compliance_patterns = {
+            'access_control': r'\b(access\s+control|authentication|authorization)\b',
+            'data_protection': r'\b(data\s+protection|encryption|privacy)\b',
+            'incident_response': r'\b(incident\s+response|breach|forensics)\b',
+            'risk_management': r'\b(risk\s+management|vulnerability|threat)\b',
+            'audit_monitoring': r'\b(audit|monitoring|logging)\b',
+            'business_continuity': r'\b(business\s+continuity|disaster\s+recovery)\b'
+        }
+        
+        for area, pattern in compliance_patterns.items():
+            if re.search(pattern, content, re.IGNORECASE):
+                compliance_areas.append(area)
+        
+        # Extract specific requirements/citations
+        requirement_patterns = [
+            r'requirement\s+(\d+\.?\d*)',
+            r'section\s+(\d+\.?\d*)',
+            r'article\s+(\d+)',
+            r'clause\s+(\d+\.?\d*)'
+        ]
+        
+        for pattern in requirement_patterns:
+            matches = re.findall(pattern, content, re.IGNORECASE)
+            citations.extend(matches)
+        
+        return {
+            'standards': list(set(standards)),
+            'compliance_areas': list(set(compliance_areas)),
+            'citations': list(set(citations))
+        }
+    
+    def _assess_compliance_relevance(self, content: str, query: str) -> float:
+        """Assess how relevant content is to compliance requirements."""
+        
+        # Compliance keywords
+        compliance_keywords = [
+            'requirement', 'compliance', 'mandatory', 'shall', 'must',
+            'policy', 'procedure', 'control', 'standard', 'guideline',
+            'audit', 'assessment', 'review', 'monitor', 'implement'
+        ]
+        
+        regulatory_keywords = [
+            'regulatory', 'regulation', 'law', 'legal', 'statute',
+            'framework', 'directive', 'ordinance', 'act'
+        ]
+        
+        content_lower = content.lower()
+        query_lower = query.lower()
+        
+        # Count keyword matches
+        compliance_score = sum(1 for keyword in compliance_keywords if keyword in content_lower)
+        regulatory_score = sum(1 for keyword in regulatory_keywords if keyword in content_lower)
+        
+        # Query relevance
+        query_words = query_lower.split()
+        query_match_score = sum(1 for word in query_words if word in content_lower)
+        
+        # Normalize scores
+        max_compliance = len(compliance_keywords)
+        max_regulatory = len(regulatory_keywords)
+        max_query = len(query_words)
+        
+        normalized_compliance = compliance_score / max_compliance
+        normalized_regulatory = regulatory_score / max_regulatory
+        normalized_query = query_match_score / max_query if max_query > 0 else 0
+        
+        # Combined relevance score
+        relevance_score = (
+            normalized_compliance * 0.4 +
+            normalized_regulatory * 0.3 +
+            normalized_query * 0.3
+        )
+        
+        return min(relevance_score, 1.0)
+    
+    def _get_international_law_context(self, content: str) -> Dict[str, Any]:
+        """Get international law and regulatory context for content."""
+        
+        context = {
+            'jurisdictions': [],
+            'applicable_laws': [],
+            'cross_border_considerations': [],
+            'harmonization_notes': []
+        }
+        
+        content_lower = content.lower()
+        
+        # Detect jurisdictions
+        if any(word in content_lower for word in ['france', 'french', 'français']):
+            context['jurisdictions'].append('France')
+            context['applicable_laws'].extend(['GDPR', 'French Data Protection Law'])
+        
+        if any(word in content_lower for word in ['europe', 'european', 'eu']):
+            context['jurisdictions'].append('European Union')
+            context['applicable_laws'].extend(['GDPR', 'NIS Directive'])
+        
+        if any(word in content_lower for word in ['international', 'global', 'worldwide']):
+            context['cross_border_considerations'].append(
+                'International data transfer requirements'
+            )
+            context['harmonization_notes'].append(
+                'Consider regulatory harmonization across jurisdictions'
+            )
+        
+        # Detect specific regulatory frameworks
+        if 'pci' in content_lower:
+            context['applicable_laws'].append('PCI DSS')
+            context['harmonization_notes'].append(
+                'PCI DSS applies globally to card payment processing'
+            )
+        
+        return context
+    
+    async def query_llm(self, query: str, context: str = "", max_tokens: int = 3000) -> str:
+        """
+        Enhanced LLM query with international law context and detailed analysis.
+        
+        Args:
+            query: Analysis query
+            context: Regulatory and policy context
+            max_tokens: Maximum response tokens
+            
+        Returns:
+            Enhanced LLM response with international law insights
+        """
+        start_time = time.time()
         
         if not self.gemini_available:
-            raise RuntimeError("Gemini LLM not available. Cannot perform analysis.")
+            raise RuntimeError("Gemini LLM not available")
+        
+        # Enhance prompt with international law context
+        enhanced_prompt = self._build_enhanced_prompt(query, context)
         
         try:
-            if context:
-                full_prompt = f"""
-CONTEXT:
-{context[:3000]}
+            response = await asyncio.to_thread(
+                self.gemini_model.generate_content,
+                enhanced_prompt
+            )
+            
+            duration = time.time() - start_time
+            
+            if response and response.text:
+                response_text = response.text.strip()
+                
+                # Log interaction
+                log_llm_interaction(
+                    len(enhanced_prompt),
+                    len(response_text),
+                    self.llm_config.get("model", "gemini-1.5-flash"),
+                    duration
+                )
+                
+                return response_text
+            else:
+                self.logger.warning("Empty response from LLM")
+                return "Analysis could not be completed - empty response from LLM."
+                
+        except Exception as e:
+            duration = time.time() - start_time
+            self.logger.error(f"LLM query failed after {duration:.2f}s: {e}")
+            raise RuntimeError(f"LLM query failed: {e}")
+    
+    def _build_enhanced_prompt(self, query: str, context: str) -> str:
+        """Build enhanced prompt with international law context."""
+        
+        current_time = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
+        
+        enhanced_prompt = f"""
+INTERNATIONAL COMPLIANCE ANALYSIS REQUEST
+Analysis Date: {current_time}
+Organization: SATIM
+Regulatory Context: French GRC Framework with International Standards
+User: LyesHADJAR
+
+REGULATORY CONTEXT & REFERENCE MATERIAL:
+{context[:4000] if context else "No specific regulatory context provided"}
 
 ANALYSIS REQUEST:
 {query}
 
-Please provide a comprehensive analysis based on the context. Be specific, actionable, and evidence-based in your response.
+ANALYSIS FRAMEWORK:
+Please provide a comprehensive analysis that addresses:
+
+1. REGULATORY COMPLIANCE ASSESSMENT
+   - Identify specific international standards and frameworks applicable
+   - Reference relevant regulatory requirements (ISO, NIST, PCI DSS, GDPR, etc.)
+   - Assess compliance gaps against international best practices
+   - Provide quantitative compliance scoring with clear rationale
+
+2. INTERNATIONAL LAW CONSIDERATIONS
+   - Consider cross-border regulatory requirements
+   - Address harmonization between French and international standards
+   - Identify jurisdiction-specific compliance obligations
+   - Note any conflicting requirements and recommended resolutions
+
+3. RISK AND IMPACT ANALYSIS
+   - Quantify risks associated with current state
+   - Assess potential regulatory penalties and business impact
+   - Consider reputational and operational risks
+   - Provide risk mitigation prioritization
+
+4. IMPLEMENTATION GUIDANCE
+   - Provide specific, actionable recommendations
+   - Include realistic timelines and resource requirements
+   - Reference implementation best practices from international experience
+   - Consider French organizational and cultural context
+
+5. BENCHMARKING AND STANDARDS
+   - Compare against international benchmarks
+   - Reference peer organization implementations
+   - Cite specific regulatory guidance and interpretations
+   - Provide industry-specific considerations
+
+RESPONSE REQUIREMENTS:
+- Be specific and quantitative in all assessments
+- Reference specific regulatory citations and standards
+- Provide actionable recommendations with clear implementation steps
+- Consider resource constraints and organizational capabilities
+- Maintain professional tone suitable for executive presentation
+- Include relevant French regulatory context where applicable
+
+Please ensure your analysis is evidence-based, actionable, and aligned with international compliance best practices.
 """
-            else:
-                full_prompt = query
-            
-            response = await asyncio.to_thread(
-                self.gemini_model.generate_content,
-                full_prompt
-            )
-            
-            if response and response.text:
-                self.logger.info("✅ Real Gemini response generated")
-                return response.text.strip()
-            else:
-                return "Analysis could not be completed - empty response from LLM."
-                
-        except Exception as e:
-            self.logger.error(f"Gemini API error: {e}")
-            raise RuntimeError(f"LLM query failed: {e}")
+        
+        return enhanced_prompt
     
-    async def semantic_search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
-        """Enhanced semantic search with improved scoring."""
-        self.logger.info(f"Semantic search: {query}")
+    async def get_document_by_id(self, doc_id: str) -> Dict[str, Any]:
+        """Get document with enhanced regulatory context."""
         
-        results = self.document_loader.search_documents(query, top_k=top_k*2)
+        # Use vector search to find relevant content
+        results = await self.semantic_search(doc_id, top_k=10)
         
-        # Enhanced scoring with domain relevance
-        formatted_results = []
-        for result in results:
-            chunk = result["chunk"]
-            base_score = result["score"]
+        if results:
+            # Combine top results
+            combined_content = "\n\n".join([
+                f"## {result['section']}\n{result['content']}"
+                for result in results[:5]
+            ])
             
-            # Enhanced scoring factors
-            content = chunk.get("text", "").lower()
-            section_title = chunk.get("section_title", "").lower()
-            query_lower = query.lower()
-            
-            # Title match bonus
-            title_bonus = 0
-            for word in query_lower.split():
-                if word in section_title:
-                    title_bonus += 0.2
-            
-            # Content density bonus
-            content_density = sum(content.count(word) for word in query_lower.split()) / max(len(content.split()), 1)
-            density_bonus = min(content_density * 5, 0.5)
-            
-            # Document type relevance
-            doc_type_bonus = 0.1 if result["document_type"] == "company_policies" else 0.05
-            
-            # Calculate final score
-            final_score = (base_score + title_bonus + density_bonus + doc_type_bonus) / 20.0
-            final_score = min(final_score, 1.0)
-            
-            formatted_results.append({
-                "document_id": chunk.get("document", "unknown"),
-                "section": chunk.get("section_title", "Unknown Section"),
-                "content": chunk.get("text", ""),
-                "similarity_score": final_score,
-                "document_type": result["document_type"],
+            return {
+                "title": results[0].get('document_id', 'Unknown'),
+                "content": combined_content,
                 "metadata": {
-                    "base_score": base_score,
-                    "title_bonus": title_bonus,
-                    "density_bonus": density_bonus
+                    "search_results": len(results),
+                    "regulatory_context": results[0].get('regulatory_context', {}),
+                    "source": "enhanced_vector_search"
                 }
-            })
-        
-        # Sort by similarity score and return top results
-        formatted_results.sort(key=lambda x: x['similarity_score'], reverse=True)
-        return formatted_results[:top_k]
-    
-    async def get_domain_content(self, domain: str, policy_types: List[str]) -> Dict[str, List[Dict[str, Any]]]:
-        """Get domain-specific content from multiple policy types."""
-        
-        domain_content = {}
-        
-        for policy_type in policy_types:
-            search_query = f"{domain} {policy_type}"
-            results = await self.semantic_search(search_query, top_k=8)
-            
-            # Filter for relevance
-            relevant_results = [r for r in results if r['similarity_score'] > 0.3]
-            domain_content[policy_type] = relevant_results
-        
-        return domain_content
-    
-    async def compare_policies(self, company_content: List[Dict[str, Any]], 
-                             reference_content: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Compare company policies against reference standards."""
-        
-        comparison_data = {
-            "coverage_analysis": {},
-            "alignment_analysis": {},
-            "gap_analysis": {}
-        }
-        
-        # Build comparison context
-        company_text = "\n".join([item['content'][:300] for item in company_content[:5]])
-        reference_text = "\n".join([item['content'][:300] for item in reference_content[:5]])
-        
-        comparison_prompt = f"""
-Compare the following company policies against reference standards:
-
-COMPANY POLICIES:
-{company_text}
-
-REFERENCE STANDARDS:
-{reference_text}
-
-Provide analysis in the following areas:
-1. Coverage percentage (0-100%)
-2. Key alignment areas
-3. Major gaps identified
-4. Specific recommendations
-
-Be specific and quantitative in your assessment.
-"""
-        
-        try:
-            comparison_result = await self.query_llm(comparison_prompt, max_tokens=2500)
-            
-            # Parse the LLM response (simplified parsing)
-            import re
-            
-            # Extract coverage percentage
-            coverage_match = re.search(r'coverage.*?(\d+)%', comparison_result, re.IGNORECASE)
-            coverage_percentage = int(coverage_match.group(1)) if coverage_match else 75
-            
-            comparison_data["coverage_analysis"] = {
-                "coverage_percentage": coverage_percentage,
-                "analysis_text": comparison_result
             }
-            
-            comparison_data["alignment_analysis"] = {
-                "alignment_score": min(coverage_percentage + 10, 100),
-                "analysis_text": comparison_result
-            }
-            
-            # Extract gaps (simplified)
-            gap_matches = re.findall(r'gap[^:]*:?\s*([^.\n]+)', comparison_result, re.IGNORECASE)
-            comparison_data["gap_analysis"] = {
-                "gaps_identified": gap_matches[:5],
-                "gap_count": len(gap_matches)
-            }
-            
-        except Exception as e:
-            self.logger.error(f"Policy comparison failed: {e}")
-            # Provide default analysis
-            comparison_data = {
-                "coverage_analysis": {"coverage_percentage": 70, "analysis_text": "Analysis unavailable"},
-                "alignment_analysis": {"alignment_score": 70, "analysis_text": "Analysis unavailable"},
-                "gap_analysis": {"gaps_identified": ["Analysis unavailable"], "gap_count": 1}
-            }
-        
-        return comparison_data
+        else:
+            return {"title": "Not Found", "content": "", "metadata": {}}
