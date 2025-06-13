@@ -1,10 +1,13 @@
+"""
+Enhanced Base Agent with performance tracking and collaboration capabilities
+"""
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional
 import logging
-import asyncio
+from datetime import datetime, timezone
 
 class EnhancedBaseAgent(ABC):
-    """Enhanced base class for all GRC agents with communication capabilities."""
+    """Enhanced base class for all GRC agents with performance tracking."""
     
     def __init__(self, name: str, llm_config: Dict[str, Any]):
         """
@@ -18,14 +21,17 @@ class EnhancedBaseAgent(ABC):
         self.llm_config = llm_config
         self.logger = logging.getLogger(f"agent.{name}")
         self.logger.info(f"Initialized enhanced {name} agent")
+        
+        # Enhanced capabilities
         self.memory = []
-        self.collaboration_history = []
         self.performance_metrics = {
             "requests_processed": 0,
             "successful_collaborations": 0,
+            "avg_response_time": 0.0,
             "analysis_quality_score": 0.0
         }
-    
+        self.collaboration_history = []
+        
     @abstractmethod
     async def process(self, input_data: Any) -> Dict[str, Any]:
         """
@@ -39,82 +45,48 @@ class EnhancedBaseAgent(ABC):
         """
         pass
     
-    # Collaboration methods for inter-agent communication
-    async def analyze_content(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze content for other agents - to be implemented by subclasses."""
-        self.logger.info(f"Content analysis request received: {request_data.get('domain', 'unknown')}")
-        return {"status": "content_analysis_completed", "data": request_data}
-    
-    async def identify_gaps(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Identify gaps for other agents - to be implemented by subclasses."""
-        self.logger.info(f"Gap identification request received: {request_data.get('domain', 'unknown')}")
-        return {"status": "gap_identification_completed", "data": request_data}
-    
-    async def assess_coverage(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Assess coverage for other agents - to be implemented by subclasses."""
-        self.logger.info(f"Coverage assessment request received: {request_data.get('domain', 'unknown')}")
-        return {"status": "coverage_assessment_completed", "data": request_data}
-    
-    async def compare_policies(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Compare policies for other agents - to be implemented by subclasses."""
-        self.logger.info(f"Policy comparison request received")
-        return {"status": "policy_comparison_completed", "data": request_data}
-    
-    async def calculate_compliance_score(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Calculate compliance score for other agents - to be implemented by subclasses."""
-        self.logger.info(f"Compliance scoring request received: {request_data.get('domain', 'unknown')}")
-        return {"status": "compliance_scoring_completed", "data": request_data}
-    
-    async def process_generic_request(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Process generic requests from other agents."""
-        self.logger.info(f"Generic request received from agent")
-        return {"status": "generic_request_processed", "data": request_data}
-    
     def add_to_memory(self, data: Any) -> None:
-        """Store data in the agent's memory."""
-        self.memory.append({
-            "timestamp": "2025-06-13 00:50:45",
-            "data": data,
-            "type": "memory_entry"
-        })
+        """Store data in the agent's memory with timestamp."""
+        memory_entry = {
+            "timestamp": datetime.now(timezone.utc),
+            "data": data
+        }
+        self.memory.append(memory_entry)
         
-        # Limit memory size
+        # Keep only recent memory (last 100 entries)
         if len(self.memory) > 100:
-            self.memory = self.memory[-50:]  # Keep last 50 entries
-        
-    def get_memory(self) -> List[Any]:
-        """Retrieve all data from the agent's memory."""
+            self.memory = self.memory[-100:]
+    
+    def get_memory(self, limit: Optional[int] = None) -> List[Any]:
+        """Retrieve data from the agent's memory."""
+        if limit:
+            return self.memory[-limit:]
         return self.memory
     
     def clear_memory(self) -> None:
         """Clear the agent's memory."""
         self.memory = []
     
-    def record_collaboration(self, collaboration_data: Dict[str, Any]) -> None:
-        """Record collaboration activity."""
-        self.collaboration_history.append({
-            "timestamp": "2025-06-13 00:50:45",
-            "collaboration_data": collaboration_data
-        })
-        
-        # Update performance metrics
-        self.performance_metrics["successful_collaborations"] += 1
-        
-        # Limit collaboration history
-        if len(self.collaboration_history) > 50:
-            self.collaboration_history = self.collaboration_history[-25:]
+    def update_performance_metrics(self, **kwargs) -> None:
+        """Update performance metrics."""
+        for key, value in kwargs.items():
+            if key in self.performance_metrics:
+                self.performance_metrics[key] = value
     
-    def get_performance_metrics(self) -> Dict[str, Any]:
-        """Get agent performance metrics."""
-        return {
-            **self.performance_metrics,
-            "memory_entries": len(self.memory),
-            "collaboration_history_size": len(self.collaboration_history),
-            "agent_name": self.name
-        }
-    
-    def update_quality_score(self, new_score: float) -> None:
-        """Update analysis quality score."""
+    def update_quality_score(self, score: float) -> None:
+        """Update analysis quality score with running average."""
         current_score = self.performance_metrics["analysis_quality_score"]
-        # Rolling average
-        self.performance_metrics["analysis_quality_score"] = (current_score * 0.7 + new_score * 0.3)
+        if current_score == 0:
+            self.performance_metrics["analysis_quality_score"] = score
+        else:
+            # Running average
+            self.performance_metrics["analysis_quality_score"] = (current_score * 0.8 + score * 0.2)
+    
+    def get_performance_summary(self) -> Dict[str, Any]:
+        """Get performance summary."""
+        return {
+            "agent_name": self.name,
+            "metrics": self.performance_metrics.copy(),
+            "memory_size": len(self.memory),
+            "collaboration_count": len(self.collaboration_history)
+        }
