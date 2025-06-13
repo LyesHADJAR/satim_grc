@@ -1,5 +1,5 @@
 """
-Test the Enhanced GRC System - FINAL FIXED VERSION
+Test Dynamic Domain Discovery and Expertise Extraction
 """
 import asyncio
 import logging
@@ -8,48 +8,26 @@ import os
 import json
 from datetime import datetime, timezone
 
-# Load environment variables
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-    print("✅ .env file loaded")
-except ImportError:
-    print("⚠️ python-dotenv not installed - using system environment variables only")
-
-# Check for google-generativeai
-try:
-    import google.generativeai as genai
-    print("✅ google-generativeai package loaded successfully")
-except ImportError:
-    print("❌ google-generativeai package not installed")
-    print("💡 Install with: pip install google-generativeai")
-    sys.exit(1)
-
 # Add the parent directory to sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Import the fixed enhanced system
 from agents.policy_comparison_agent import EnhancedPolicyComparisonAgent
 from agents.communication_protocol import AgentCommunicationProtocol
 from rag.query_engine import EnhancedRAGQueryEngine
 
-async def test_enhanced_real_llm_analysis():
-    """Test the enhanced real LLM analysis system."""
+async def test_dynamic_domain_discovery():
+    """Test dynamic domain discovery and analysis."""
     
-    # Set up logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     
-    print("🚀 ENHANCED GRC AUTOMATION - REAL LLM ANALYSIS (FIXED) 🚀")
+    print("🚀 DYNAMIC DOMAIN DISCOVERY - GRC ANALYSIS 🚀")
     print("="*70)
     print(f"📅 Date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC")
     print(f"👤 User: LyesHADJAR")
-    print("🤖 Powered by REAL Gemini Flash 2.0 with Enhanced Analysis")
+    print("🤖 Powered by Dynamic Domain Discovery + Real Gemini LLM")
     print("="*70)
     
-    # Verify API key first
+    # API key verification
     api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_AI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     if not api_key:
         print("\n❌ CRITICAL: Gemini API key not found!")
@@ -71,16 +49,14 @@ async def test_enhanced_real_llm_analysis():
             with open(path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             print(f"✅ {name}: {len(data)} chunks loaded")
-            print(f"   📊 Content: {sum(len(chunk.get('text', '')) for chunk in data):,} characters")
-            print(f"   📄 Sample: {data[0].get('document', 'Unknown')}")
         else:
-            print(f"❌ {name}: FILE NOT FOUND - {path}")
+            print(f"❌ {name}: FILE NOT FOUND")
             return
     
     try:
-        print(f"\n🔧 INITIALIZING ENHANCED SYSTEMS:")
+        # Initialize systems
+        print(f"\n🔧 INITIALIZING DYNAMIC DISCOVERY SYSTEM:")
         
-        # Initialize enhanced RAG engine
         rag_engine = EnhancedRAGQueryEngine(
             llm_config={
                 "provider": "gemini",
@@ -93,13 +69,11 @@ async def test_enhanced_real_llm_analysis():
         )
         print("✅ Enhanced RAG Engine initialized")
         
-        # Initialize agent communication protocol
         communication_protocol = AgentCommunicationProtocol()
         print("✅ Agent Communication Protocol initialized")
         
-        # Initialize FIXED enhanced policy comparison agent
         agent = EnhancedPolicyComparisonAgent(
-            name="enhanced_policy_analyzer",
+            name="dynamic_discovery_agent",
             llm_config={
                 "provider": "gemini",
                 "model": "gemini-2.0-flash-exp",
@@ -109,177 +83,92 @@ async def test_enhanced_real_llm_analysis():
             rag_engine=rag_engine,
             communication_protocol=communication_protocol
         )
-        print("✅ Enhanced Policy Comparison Agent (FIXED) initialized")
+        print("✅ Dynamic Domain Discovery Agent initialized")
         
-        # Test content retrieval
-        print(f"\n🔍 TESTING ENHANCED CONTENT RETRIEVAL:")
-        search_results = await rag_engine.semantic_search("access control authentication requirements", top_k=5)
-        print(f"✅ Found {len(search_results)} relevant sections")
-        for i, result in enumerate(search_results[:3], 1):
-            print(f"   {i}. {result['section'][:60]}... (Score: {result['similarity_score']:.3f})")
-        
-        # Run enhanced analysis
-        input_data = {
-            "company_policy_ids": ["satim", "access control", "incident response"],
+        # Test 1: Auto-discovery (no domains provided)
+        print(f"\n🔄 TEST 1: AUTOMATIC DOMAIN DISCOVERY:")
+        input_data_auto = {
+            "company_policy_ids": ["satim"],
             "reference_policy_ids": ["pci-dss"],
-            "domains": ["access_control", "incident_response", "data_protection"]
+            # No domains provided - should auto-discover
         }
         
-        print(f"\n🔄 RUNNING ENHANCED REAL LLM ANALYSIS:")
-        print(f"   🏢 Company Policies: {input_data['company_policy_ids']}")
-        print(f"   📋 Reference Standards: {input_data['reference_policy_ids']}")
-        print(f"   🎯 Analysis Domains: {input_data['domains']}")
-        print(f"   🤖 Analysis Mode: Enhanced Real LLM (FIXED)")
+        print("   🔍 Running automatic domain discovery...")
+        results_auto = await agent.process(input_data_auto)
         
-        # Perform comprehensive analysis
-        results = await agent.process(input_data)
+        print(f"\n📊 DISCOVERED DOMAINS:")
+        discovered = results_auto.get("discovered_domains", {})
+        for domain, info in discovered.items():
+            confidence_emoji = {"high": "🟢", "medium": "🟡", "low": "🔴"}.get(info.get("confidence", "low"), "🔴")
+            print(f"   {confidence_emoji} {domain}: {info.get('confidence', 'unknown')} confidence")
+            print(f"      📝 Evidence: {info.get('evidence', 'No evidence')[:80]}...")
+            print(f"      🔖 Topics: {', '.join(info.get('key_topics', [])[:5])}")
         
-        print("\n" + "="*70)
-        print("📊 ENHANCED REAL LLM ANALYSIS RESULTS")
-        print("="*70)
+        print(f"\n📊 EXTRACTED DOMAIN EXPERTISE:")
+        expertise = results_auto.get("extracted_domain_expertise", {})
+        for domain, exp in expertise.items():
+            print(f"\n🎯 {domain.upper()}:")
+            print(f"   🔑 Key Topics ({len(exp.get('key_topics', []))}): {', '.join(exp.get('key_topics', [])[:6])}")
+            print(f"   🛡️ Critical Controls ({len(exp.get('critical_controls', []))}): {', '.join(exp.get('critical_controls', [])[:4])}")
+            print(f"   📋 Frameworks: {', '.join(exp.get('compliance_frameworks', []))}")
+            print(f"   ⚠️ Risk Factors: {', '.join(exp.get('risk_factors', [])[:3])}")
         
-        domain_scores = []
-        total_gaps = 0
-        
-        for domain, domain_results in results["domain_results"].items():
-            print(f"\n🎯 DOMAIN: {domain.upper()}")
-            print("─" * 60)
-            
-            coverage = domain_results['coverage']
-            gaps = domain_results['gaps']
-            score = domain_results['score']
-            quantitative_scores = domain_results['quantitative_scores']
-            insights = domain_results.get('strategic_insights', {})
-            
-            domain_scores.append(score.score)
-            total_gaps += len(gaps)
-            
-            # Enhanced Coverage Analysis
-            print(f"📈 COMPREHENSIVE COVERAGE ANALYSIS:")
-            print(f"   • Coverage Percentage: {coverage['coverage_percentage']:.1f}%")
-            print(f"   • Topics Covered: {coverage['topics_covered']}/{coverage['total_reference_topics']}")
-            print(f"   • Coverage Depth: {coverage['coverage_depth']}")
-            print(f"   • Maturity Level: {coverage['maturity_level']}")
-            
-            # Quantitative Scoring
-            print(f"\n📊 QUANTITATIVE SCORES:")
-            print(f"   • Coverage Score: {quantitative_scores['coverage_score']:.1f}/100")
-            print(f"   • Quality Score: {quantitative_scores['quality_score']:.1f}/100")
-            print(f"   • Alignment Score: {quantitative_scores['alignment_score']:.1f}/100")
-            print(f"   • Implementation Score: {quantitative_scores['implementation_score']:.1f}/100")
-            
-            # Gap Analysis
-            print(f"\n🔍 DETAILED GAP ANALYSIS ({len(gaps)} gaps identified):")
-            for i, gap in enumerate(gaps[:3], 1):
-                severity_emoji = {
-                    "Critical": "🚨", "High": "⚠️", "Medium": "💡", "Low": "📝"
-                }.get(gap['severity'], "📝")
-                print(f"   {severity_emoji} Gap {i}: {gap['title']}")
-                print(f"      📊 Severity: {gap['severity']} | Risk Impact: {gap.get('risk_impact', 'Medium')}")
-                print(f"      💡 Recommendation: {gap['recommendation'][:100]}...")
-            
-            # Strategic Insights
-            if insights:
-                print(f"\n🧠 STRATEGIC INSIGHTS:")
-                if insights.get('key_strengths'):
-                    print(f"   💪 Key Strengths:")
-                    for strength in insights['key_strengths'][:2]:
-                        print(f"      • {strength}")
-                
-                if insights.get('improvement_priorities'):
-                    print(f"   📈 Improvement Priorities:")
-                    for priority in insights['improvement_priorities'][:2]:
-                        print(f"      • {priority}")
-            
-            # Domain Score
+        print(f"\n📊 ANALYSIS RESULTS:")
+        for domain, domain_result in results_auto["domain_results"].items():
+            score = domain_result['score']
+            coverage = domain_result['coverage']
             score_emoji = "🟢" if score.score >= 75 else "🟡" if score.score >= 55 else "🔴"
-            print(f"\n{score_emoji} ENHANCED COMPLIANCE SCORE: {score.score:.1f}/100")
-            print(f"   📊 Score Components:")
-            for criterion in score.criteria:
-                comp_emoji = "🟢" if criterion['score'] >= 75 else "🟡" if criterion['score'] >= 55 else "🔴"
-                print(f"      {comp_emoji} {criterion['name']}: {criterion['score']:.1f} (weight: {criterion['weight']:.0%})")
-            
-            print("─" * 60)
+            print(f"\n{score_emoji} {domain.upper()}: {score.score:.1f}/100")
+            print(f"   📈 Coverage: {coverage['coverage_percentage']:.1f}%")
+            print(f"   📊 Maturity: {coverage['maturity_level']}")
+            print(f"   🔍 Gaps: {len(domain_result['gaps'])}")
         
-        # Overall Assessment
-        overall_score = results['overall_score']
-        overall_emoji = "🟢" if overall_score.score >= 75 else "🟡" if overall_score.score >= 55 else "🔴"
+        # Overall Results
+        overall = results_auto['overall_score']
+        overall_emoji = "🟢" if overall.score >= 75 else "🟡" if overall.score >= 55 else "🔴"
+        print(f"\n{overall_emoji} OVERALL ENTERPRISE SCORE: {overall.score:.1f}/100")
         
-        print(f"\n{overall_emoji} ENTERPRISE COMPLIANCE ASSESSMENT")
-        print("="*60)
-        print(f"📊 Enterprise Score: {overall_score.score:.1f}/100")
-        print(f"📈 Domain Score Range: {min(domain_scores):.1f} - {max(domain_scores):.1f}")
-        print(f"🔍 Total Gaps Identified: {total_gaps}")
+        # Test 2: Manual domain specification
+        print(f"\n🔄 TEST 2: MANUAL DOMAIN SPECIFICATION:")
+        input_data_manual = {
+            "company_policy_ids": ["satim"],
+            "reference_policy_ids": ["pci-dss"], 
+            "domains": ["access_control", "data_protection"]  # Manually specified
+        }
         
-        # Enterprise Assessment Level
-        if overall_score.score >= 80:
-            assessment_level = "🟢 ADVANCED - Mature compliance framework with strong controls"
-        elif overall_score.score >= 65:
-            assessment_level = "🟡 DEVELOPING - Good foundation with targeted improvements needed"
-        elif overall_score.score >= 50:
-            assessment_level = "🟡 EMERGING - Basic framework requiring enhancement"
-        else:
-            assessment_level = "🔴 INITIAL - Foundational development required"
+        print("   🎯 Using manually specified domains...")
+        results_manual = await agent.process(input_data_manual)
         
-        print(f"🎯 Enterprise Assessment: {assessment_level}")
+        print(f"\n📊 MANUAL DOMAIN ANALYSIS:")
+        for domain in results_manual["domains_analyzed"]:
+            domain_result = results_manual["domain_results"][domain]
+            score = domain_result['score']
+            score_emoji = "🟢" if score.score >= 75 else "🟡" if score.score >= 55 else "🔴"
+            print(f"   {score_emoji} {domain}: {score.score:.1f}/100")
         
-        # Strategic Recommendations
-        print(f"\n📋 STRATEGIC ENTERPRISE RECOMMENDATIONS:")
-        for i, rec in enumerate(overall_score.recommendations[:8], 1):
-            print(f"   {i}. {rec}")
+        # Performance Comparison
+        print(f"\n📊 DISCOVERY vs MANUAL COMPARISON:")
+        auto_domains = len(results_auto["domain_results"])
+        manual_domains = len(results_manual["domain_results"])
         
-        # Performance Metrics
-        print(f"\n⚡ PERFORMANCE METRICS:")
-        print(f"   • Analysis Quality: Real Gemini Flash 2.0 (Enhanced & Fixed)")
-        print(f"   • Domains Analyzed: {len(results['domain_results'])}")
-        print(f"   • Evidence-Based Analysis: ✅ Yes")
-        print(f"   • Agent Collaboration: ✅ Active")
+        print(f"   🔍 Auto-discovered domains: {auto_domains}")
+        print(f"   🎯 Manual domains: {manual_domains}")
+        print(f"   📈 Discovery effectiveness: {'✅ Good' if auto_domains >= 3 else '⚠️ Limited'}")
         
-        # Risk Summary
-        print(f"\n🎯 EXECUTIVE RISK SUMMARY:")
-        critical_gaps = sum(1 for domain_result in results['domain_results'].values() 
-                           for gap in domain_result['gaps'] 
-                           if gap.get('severity') in ['Critical', 'High'])
-        
-        print(f"   ⚠️ High Priority Items: {critical_gaps}")
-        print(f"   📊 Overall Risk Level: {'Medium' if critical_gaps > 3 else 'Low'}")
-        
-        print(f"\n✨ Enhanced real LLM analysis complete!")
-        print(f"🎉 SATIM policies analyzed with comprehensive AI intelligence!")
-        print(f"🔥 Analysis quality: {overall_score.score:.1f}% compliance score achieved!")
-        
-        # Test agent collaboration
-        print(f"\n🤝 TESTING AGENT COLLABORATION:")
-        from agents.communication_protocol import AgentRequest, RequestType
-        
-        test_request = AgentRequest(
-            request_id="test_001",
-            requesting_agent="test_coordinator",
-            target_agent="enhanced_policy_analyzer",
-            request_type=RequestType.CONTENT_ANALYSIS,
-            data={"domain": "access_control", "content": ["test content"]}
-        )
-        
-        collaboration_response = await communication_protocol.request_analysis(test_request)
-        if collaboration_response.success:
-            print("   ✅ Agent collaboration working successfully")
-            print(f"   📊 Response data keys: {list(collaboration_response.data.keys())}")
-        else:
-            print(f"   ❌ Agent collaboration failed: {collaboration_response.error_message}")
+        print(f"\n✨ Dynamic domain discovery complete!")
+        print(f"🎉 System successfully adapted to document content!")
         
     except Exception as e:
-        print(f"❌ Error during enhanced analysis: {e}")
+        print(f"❌ Error during dynamic discovery: {e}")
         import traceback
         traceback.print_exc()
 
 if __name__ == "__main__":
-    print("🔧 ENHANCED REAL LLM ANALYSIS SYSTEM (FIXED):")
-    print("   ✅ Enhanced policy comparison agent (FIXED)")
-    print("   ✅ Real Gemini Flash 2.0 integration")
-    print("   ✅ Comprehensive context building")
-    print("   ✅ Evidence-based gap identification")
-    print("   ✅ Quantitative scoring framework")
-    print("   ✅ Strategic enterprise assessment")
+    print("🔧 DYNAMIC DOMAIN DISCOVERY SYSTEM:")
+    print("   ✅ Automatic domain identification from documents")
+    print("   ✅ Dynamic expertise extraction from reference standards")
+    print("   ✅ Adaptive analysis based on discovered content")
+    print("   ✅ Real Gemini LLM integration")
     print("")
     
-    asyncio.run(test_enhanced_real_llm_analysis())
+    asyncio.run(test_dynamic_domain_discovery())
