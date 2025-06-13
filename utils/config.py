@@ -1,87 +1,81 @@
+"""
+System configuration for Advanced GRC System
+"""
 import os
-import json
-import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
-class ConfigManager:
-    """Utility for managing configuration settings."""
+def get_system_config() -> Dict[str, Any]:
+    """Get complete system configuration."""
     
-    def __init__(self, config_path: Optional[str] = None):
-        """
-        Initialize the config manager.
-        
-        Args:
-            config_path: Path to the JSON configuration file
-        """
-        self.logger = logging.getLogger("config")
-        self.config = {}
-        
-        # Load configuration from file if provided
-        if config_path and os.path.exists(config_path):
-            self.load_config(config_path)
-        
-        # Load configuration from environment variables
-        self._load_from_env()
+    # Base paths
+    base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
-    def load_config(self, config_path: str) -> None:
-        """Load configuration from a JSON file."""
-        try:
-            with open(config_path, 'r') as f:
-                self.config.update(json.load(f))
-            self.logger.info(f"Loaded configuration from {config_path}")
-        except Exception as e:
-            self.logger.error(f"Failed to load config from {config_path}: {e}")
+    return {
+        "llm": {
+            "provider": "gemini",
+            "model": os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp"),
+            "temperature": float(os.getenv("GEMINI_TEMPERATURE", "0.2")),
+            "max_tokens": int(os.getenv("GEMINI_MAX_TOKENS", "4000")),
+            "top_p": float(os.getenv("GEMINI_TOP_P", "0.8")),
+            "top_k": int(os.getenv("GEMINI_TOP_K", "40")),
+            "api_key": os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_AI_API_KEY")
+        },
+        "data_paths": {
+            "company_policies": os.path.join(base_path, "preprocessing", "policies", "satim_chunks_cleaned.json"),
+            "reference_policies": os.path.join(base_path, "preprocessing", "norms", "international_norms", "pci_dss_chunks.json")
+        },
+        "system": {
+            "max_concurrent_agents": int(os.getenv("MAX_CONCURRENT_AGENTS", "10")),
+            "analysis_timeout": int(os.getenv("ANALYSIS_TIMEOUT", "300")),
+            "cache_enabled": os.getenv("CACHE_ENABLED", "true").lower() == "true",
+            "log_level": os.getenv("LOG_LEVEL", "INFO"),
+            "performance_monitoring": True,
+            "agent_health_checks": True
+        },
+        "agent_config": {
+            "coverage_analyst": {
+                "max_concurrent_requests": 3,
+                "timeout": 30,
+                "retry_attempts": 2
+            },
+            "gap_identifier": {
+                "max_concurrent_requests": 2,
+                "timeout": 45,
+                "retry_attempts": 2
+            },
+            "risk_assessor": {
+                "max_concurrent_requests": 2,
+                "timeout": 60,
+                "retry_attempts": 2
+            }
+        },
+        "reporting": {
+            "executive_dashboard": True,
+            "detailed_reports": True,
+            "export_formats": ["json", "pdf", "excel"],
+            "auto_recommendations": True
+        }
+    }
+
+def validate_config(config: Dict[str, Any]) -> bool:
+    """Validate system configuration."""
     
-    def _load_from_env(self) -> None:
-        """Load configuration from environment variables."""
-        # LLM configuration
-        if os.getenv("LLM_API_KEY"):
-            self.config["llm"] = self.config.get("llm", {})
-            self.config["llm"]["api_key"] = os.getenv("LLM_API_KEY")
-            self.config["llm"]["model"] = os.getenv("LLM_MODEL", "gpt-4")
-            
-        # Vector DB configuration
-        if os.getenv("VECTOR_DB_HOST"):
-            self.config["vector_db"] = self.config.get("vector_db", {})
-            self.config["vector_db"]["host"] = os.getenv("VECTOR_DB_HOST")
-            self.config["vector_db"]["port"] = os.getenv("VECTOR_DB_PORT", "8000")
-            
-    def get(self, key: str, default: Any = None) -> Any:
-        """
-        Get a configuration value by key.
-        
-        Args:
-            key: Configuration key (can use dot notation for nested keys)
-            default: Default value if key is not found
-            
-        Returns:
-            Configuration value or default
-        """
-        keys = key.split(".")
-        value = self.config
-        
-        for k in keys:
-            if isinstance(value, dict) and k in value:
-                value = value[k]
-            else:
-                return default
-                
-        return value
+    required_keys = ["llm", "data_paths", "system"]
     
-    def set(self, key: str, value: Any) -> None:
-        """
-        Set a configuration value.
-        
-        Args:
-            key: Configuration key (can use dot notation for nested keys)
-            value: Value to set
-        """
-        keys = key.split(".")
-        config = self.config
-        
-        for i, k in enumerate(keys[:-1]):
-            if k not in config:
-                config[k] = {}
-            config = config[k]
-            
-        config[keys[-1]] = value
+    for key in required_keys:
+        if key not in config:
+            print(f"❌ Missing required config key: {key}")
+            return False
+    
+    # Validate LLM config
+    if not config["llm"].get("api_key"):
+        print("❌ Missing LLM API key")
+        return False
+    
+    # Validate data paths
+    for path_name, path in config["data_paths"].items():
+        if not os.path.exists(path):
+            print(f"❌ Data file not found: {path_name} -> {path}")
+            return False
+    
+    return True
