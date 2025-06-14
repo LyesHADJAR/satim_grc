@@ -1,183 +1,387 @@
-# SATIM GRC - Advanced Governance, Risk, and Compliance Analysis System
+# SATIM GRC - Advanced AI-Powered Compliance Analysis System
 
-![GRC Analysis System](https://img.shields.io/badge/GRC-Analysis-blue)
-![Python](https://img.shields.io/badge/Python-3.8+-green)
-![TypeScript](https://img.shields.io/badge/TypeScript-4.5+-blue)
-![LLM](https://img.shields.io/badge/LLM-Gemini-purple)
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
+[![AI Powered](https://img.shields.io/badge/AI-Powered-green.svg)](https://github.com/LyesHADJAR/satim_grc)
+[![LLM](https://img.shields.io/badge/LLM-Google%20Gemini-orange.svg)](https://ai.google.dev/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-SATIM GRC is an advanced Governance, Risk, and Compliance analysis system that leverages Large Language Models (LLMs) and vector search to analyze policies, identify compliance gaps, and provide intelligent recommendations.
+## 🚀 Overview
 
-## System Architecture
+SATIM GRC is an advanced AI-powered Governance, Risk & Compliance analysis system that leverages cutting-edge technologies including **Large Language Models (LLM)**, **Retrieval-Augmented Generation (RAG)**, and **Agentic AI** to provide comprehensive policy analysis, gap identification, and intelligent recommendations for regulatory compliance.
 
-The SATIM GRC system employs a multi-agent architecture with a sophisticated RAG (Retrieval-Augmented Generation) engine for contextual analysis of compliance documents.
+### 🎯 Purpose
 
+The system is designed to:
+- **Automate compliance analysis** across multiple regulatory frameworks (PCI DSS, ISO 27001, GDPR, French regulations)
+- **Identify policy gaps** through intelligent comparison with industry standards
+- **Generate actionable recommendations** using AI-powered analysis
+- **Provide French regulatory compliance assessment** with specialized scoring
+- **Enable dynamic domain discovery** from organizational policies
+- **Deliver executive-ready reports** with strategic insights
 
-### Core Components
+## 🏗️ System Architecture
 
-1. **Multi-Agent System**
-   - Collaborative agents working together to perform comprehensive analysis
-   - Performance tracking and monitoring built into each agent
-   - Sophisticated communication protocol for agent coordination
+### Multi-Agent Architecture with RAG Integration
 
-2. **Vector Search Engine**
-   - FAISS-powered semantic search
-   - International law and regulatory context enhancement
-   - Hybrid search combining TF-IDF, BM25, and vector embedding approaches
-
-3. **LLM Integration**
-   - Google Gemini integration for advanced analysis
-   - Context-aware prompting with domain expertise
-   - Policy gap identification and recommendation generation
-
-4. **Frontend Dashboard**
-   - Modern React-based UI with Material UI
-   - Interactive visualization of compliance metrics
-   - Executive dashboards and detailed reports
-
-## System Components
-
-### 1. Agents System
-
-The agents system is the core of the SATIM GRC platform, with specialized components for different aspects of compliance analysis:
-
-#### Base Agent Framework
-- `EnhancedBaseAgent`: Abstract base class with performance tracking, memory, and collaboration capabilities
-- `EnhancedAgentCoordinator`: Orchestrates multi-agent workflows and manages agent collaboration
-- `AgentCommunicationProtocol`: Manages communication between agents with request/response tracking
-
-#### Specialized Agents
-- `EnhancedPolicyComparisonAgent`: Analyzes policies against reference standards and performs gap analysis
-- `IntelligentPolicyFeedbackAgent`: Generates actionable recommendations for policy improvement
-
-### 2. RAG (Retrieval-Augmented Generation) System
-
-The RAG system enhances LLM analysis with relevant policy content:
-
-- `InternationalLawEnhancedRAGEngine`: Main engine that combines vector search with LLM capabilities
-- `ContextBuilder`: Creates rich, structured context for policy comparison
-- `DocumentLoader`: Loads and manages policy documents from JSON files
-- `EnhancedVectorSearchService`: Provides vector similarity search with FAISS integration
-
-### 3. Models
-
-Data structures for system entities:
-
-- `Policy` and `PolicySection`: Represent policy documents and their sections
-- `ComplianceScore` and `ScoreCriteria`: Model for compliance scoring and evaluation
-- `PolicySectionMatch`: Represents matches between company and reference policies
-
-### 4. Utilities
-
-Supporting components for system operation:
-
-- `config.py`: System configuration management
-- `logging_config.py`: Enhanced logging with performance tracking
-- `rich_output.py`: Rich terminal output for analysis visualization
-
-### 5. Frontend
-
-Modern React-based UI for visualization and interaction:
-
-- Material UI components for consistent design
-- Interactive dashboards for compliance metrics
-- Policy analysis and recommendation views
-
-## Getting Started
-
-### Prerequisites
-
-- Python 3.8+
-- Node.js 14+
-- Google Gemini API key
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/LyesHADJAR/satim_grc.git
-cd satim_grc
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    SATIM GRC SYSTEM                             │
+├─────────────────────────────────────────────────────────────────┤
+│  🤖 AGENTIC AI LAYER                                           │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │  Policy Agent   │  │ Feedback Agent  │  │  Coordinator    │ │
+│  │  Comparison &   │  │ Improvement     │  │  Multi-Agent    │ │
+│  │  Gap Analysis   │  │ Recommendations │  │  Orchestration  │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+├─────────────────────────────────────────────────────────────────┤
+│  🧠 RAG (RETRIEVAL-AUGMENTED GENERATION) LAYER                │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │  Query Engine   │  │ Vector Search   │  │ Context Builder │ │
+│  │  International │  │ FAISS + Hybrid  │  │ Policy Context  │ │
+│  │  Law Enhanced   │  │ TF-IDF + BM25   │  │ Comparison      │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+├─────────────────────────────────────────────────────────────────┤
+│  🗃️ DATA & KNOWLEDGE LAYER                                     │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │  Company        │  │  Reference      │  │  Vector         │ │
+│  │  Policies       │  │  Standards      │  │  Database       │ │
+│  │  (SATIM)        │  │  (PCI DSS,ISO)  │  │  (FAISS)        │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+├─────────────────────────────────────────────────────────────────┤
+│  🤖 LLM INTEGRATION                                             │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │              Google Gemini 1.5 Flash                       │ │
+│  │    • Regulatory Expertise • French Compliance              │ │
+│  │    • Gap Analysis • Strategic Recommendations              │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-2. Install Python dependencies:
+## 🧩 Core Components
+
+### 1. 🤖 Agentic AI Layer
+
+#### **EnhancedPolicyComparisonAgent**
+*File: `agents/policy_comparison_agent.py`*
+
+**Purpose**: Intelligent policy analysis and comparison
+
+**Key Features**:
+- Dynamic domain discovery from documents
+- French compliance framework assessment
+- Gap identification with severity scoring
+- Coverage analysis and alignment assessment
+
+**AI Capabilities**: Uses LLM for deep policy understanding and regulatory interpretation
+
+#### **IntelligentPolicyFeedbackAgent**
+*File: `agents/policy_feedback_agent.py`*
+
+**Purpose**: Generate actionable improvement recommendations
+
+**Key Features**:
+- LLM-powered policy improvement suggestions
+- Executive action plan generation
+- Policy template creation
+- Implementation roadmap with timelines
+
+**AI Capabilities**: Contextual understanding of organizational needs and regulatory requirements
+
+#### **EnhancedAgentCoordinator**
+*File: `agents/coordinator.py`*
+
+**Purpose**: Multi-agent workflow orchestration
+
+**Key Features**:
+- Collaborative analysis coordination
+- Performance metrics tracking
+- Workflow management and error handling
+- Agent communication protocol
+
+#### **AgentCommunicationProtocol**
+*File: `agents/communication_protocol.py`*
+
+**Purpose**: Inter-agent communication and collaboration
+
+**Key Features**:
+- Request/response handling between agents
+- Collaboration metrics and history
+- Distributed analysis coordination
+
+### 2. 🧠 RAG (Retrieval-Augmented Generation) Layer
+
+#### **InternationalLawEnhancedRAGEngine**
+*File: `rag/query_engine.py`*
+
+**Purpose**: Advanced RAG system with regulatory expertise
+
+**Key Features**:
+- International law and compliance context
+- French regulatory framework integration
+- Enhanced query processing with regulatory keywords
+- Multi-framework compliance analysis
+
+**LLM Integration**: Google Gemini with specialized compliance system instructions
+
+#### **EnhancedVectorSearchService**
+*File: `rag/vector_search_service.py`*
+
+**Purpose**: Hybrid vector search for document retrieval
+
+**Key Features**:
+- **FAISS integration** for efficient similarity search
+- **Hybrid scoring**: TF-IDF + BM25 + Vector embeddings
+- Document type-specific indexing
+- Performance-optimized with caching
+
+**Search Methods**: Semantic, lexical, and hybrid approaches
+
+#### **ContextBuilder**
+*File: `rag/context_builder.py`*
+
+**Purpose**: Intelligent context preparation for LLM analysis
+
+**Key Features**:
+- Policy content structuring
+- Comparison matrix generation
+- Domain relevance scoring
+- Gap indicator identification
+
+### 3. 🗃️ Data Management Layer
+
+#### **DocumentLoader**
+*File: `rag/document_loader.py`*
+
+**Purpose**: Policy document management and loading
+
+**Key Features**:
+- JSON-based document chunking
+- Multi-document type support
+- Efficient content retrieval
+- Metadata preservation
+
+### 4. 🛠️ Utilities & Infrastructure
+
+#### **Enhanced Logging System**
+*File: `utils/logging_config.py`*
+
+**Features**:
+- Comprehensive analysis tracking
+- Performance monitoring
+- Domain-specific logging
+- Color-coded console output
+
+#### **Rich Terminal Display**
+*File: `utils/rich_output.py`*
+
+**Features**:
+- Professional analysis presentation
+- Progress tracking and visualization
+- Executive-ready output formatting
+- Real-time status updates
+
+## 🚀 Key Technologies
+
+### 🤖 Large Language Model (LLM) Integration
+- **Provider**: Google Gemini 1.5 Flash
+- **Capabilities**:
+  - Regulatory expertise and interpretation
+  - French compliance framework understanding
+  - Policy gap analysis and recommendations
+  - Strategic insight generation
+  - Executive-level communication
+
+### 🧠 Retrieval-Augmented Generation (RAG)
+- **Enhanced Context**: International law and regulatory frameworks
+- **Document Processing**: Chunked policy documents with metadata
+- **Query Enhancement**: Regulatory keyword expansion
+- **Multi-source Integration**: Company policies + Reference standards
+
+### 🔍 Vector Search Technology
+- **FAISS Integration**: Efficient similarity search at scale
+- **Hybrid Approach**: 
+  - TF-IDF (30% weight) - Keyword relevance
+  - BM25 (30% weight) - Document ranking
+  - Vector Embeddings (40% weight) - Semantic similarity
+- **Performance**: Optimized indexing with persistence
+
+### 🤖 Agentic AI Architecture
+- **Multi-Agent Collaboration**: Specialized agents for different analysis aspects
+- **Communication Protocol**: Structured inter-agent messaging
+- **Workflow Orchestration**: Coordinator-managed analysis pipelines
+- **Performance Tracking**: Comprehensive metrics and monitoring
+
+## 🎯 Usage
+
+### Quick Start
+
 ```bash
+# Install dependencies
 pip install -r requirements.txt
-```
 
-3. Install frontend dependencies:
-```bash
-cd frontend
-npm install
-```
+# Set up environment variables
+export GEMINI_API_KEY="your_gemini_api_key"
 
-4. Set up environment variables:
-```bash
-# Create a .env file in the root directory
-echo "GEMINI_API_KEY=your_api_key_here" > .env
-echo "GEMINI_MODEL=gemini-1.5-flash" >> .env
-```
-
-### Data Preparation
-
-The system requires policy documents in a specific format:
-
-1. Place your company policies in `preprocessing/policies/`
-2. Place reference standards (like PCI DSS) in `preprocessing/norms/international_norms/`
-3. Run the preprocessing script:
-```bash
-python preprocessing/process_documents.py
-```
-
-### Running the System
-
-1. Start the backend:
-```bash
+# Run the analysis
 python test/test.py
 ```
 
-2. Start the frontend development server:
-```bash
-cd frontend
-npm start
+### Configuration
+
+```python
+# Example configuration
+config = {
+    "llm": {
+        "provider": "gemini",
+        "model": "gemini-1.5-flash",
+        "temperature": 0.2,
+        "max_tokens": 4000
+    },
+    "analysis": {
+        "domains": ["access_control", "data_protection", "incident_response"],
+        "company_policies": ["satim"],
+        "reference_standards": ["pci-dss"]
+    }
+}
 ```
 
-3. Access the system at `http://localhost:3000`
+### Analysis Process
 
-## Analysis Workflow
+1. **Domain Discovery**: AI automatically identifies compliance domains
+2. **Policy Analysis**: Deep comparison with regulatory standards
+3. **Gap Identification**: Intelligent gap analysis with severity scoring
+4. **Recommendation Generation**: Actionable improvement suggestions
+5. **Executive Reporting**: Professional presentation of findings
 
-The SATIM GRC system follows a sophisticated analysis workflow:
+## 📊 Output Examples
 
-1. **Domain Discovery**: Automatically identifies relevant compliance domains in your policies
-2. **Content Extraction**: Extracts domain-specific content from both company and reference policies
-3. **Gap Analysis**: Identifies gaps between company policies and reference standards
-4. **Coverage Assessment**: Evaluates the completeness of policy coverage
-5. **Compliance Scoring**: Calculates quantitative compliance scores for each domain
-6. **Recommendation Generation**: Produces actionable recommendations for policy improvement
+### Compliance Scoring
+```
+Enterprise Compliance Score: 72.3/100
+French Compliance Level: 3/5
+Domains Analyzed: 8
+Critical Gaps Identified: 12
+```
 
-## Configuration
+### Gap Analysis
+- **Access Control**: Missing MFA implementation (High Severity)
+- **Data Protection**: Incomplete encryption standards (Medium Severity)
+- **Incident Response**: No formal escalation procedures (High Severity)
 
-System behavior can be customized through the `utils/config.py` file:
+### AI-Generated Recommendations
+- Implement multi-factor authentication across all systems
+- Establish comprehensive data classification framework
+- Develop incident response playbooks with clear escalation paths
 
-- LLM settings (model, temperature, etc.)
-- Data paths for policy documents
-- System parameters (timeouts, concurrency, etc.)
-- Reporting options
+## 🏢 French Regulatory Compliance
 
-## Contributing
+The system includes specialized French compliance assessment:
 
-Contributions to SATIM GRC are welcome! Please follow these steps:
+- **Policy Status**: Existence and completeness of policies
+- **Implementation Status**: Actual deployment and enforcement
+- **Automation Status**: Process automation and monitoring
+- **Reporting Status**: Compliance reporting and documentation
+- **Overall Compliance Level**: 1-5 scale assessment
+
+## 🔧 Architecture Benefits
+
+### Scalability
+- Modular agent architecture allows independent scaling
+- Vector database supports large document collections
+- Async processing for performance optimization
+
+### Extensibility
+- Plugin architecture for new compliance frameworks
+- Configurable agents for different analysis types
+- Extensible RAG system for additional data sources
+
+### Intelligence
+- LLM-powered understanding of complex regulations
+- Context-aware recommendations
+- Multi-framework compliance correlation
+
+### Accuracy
+- Hybrid search ensures comprehensive document coverage
+- Agent collaboration reduces analysis bias
+- Performance tracking enables continuous improvement
+
+## 🚦 System Requirements
+
+- **Python**: 3.8+
+- **Memory**: 8GB+ RAM recommended
+- **Storage**: 2GB+ for vector databases
+- **API**: Google Gemini API access
+- **Dependencies**: See `requirements.txt`
+
+## 📈 Performance Metrics
+
+The system tracks comprehensive performance metrics:
+- Analysis duration and throughput
+- LLM interaction efficiency
+- Vector search performance
+- Agent collaboration success rates
+- Compliance scoring accuracy
+
+## 🛠️ Installation
+
+### Prerequisites
+```bash
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### Environment Setup
+```bash
+# Set environment variables
+export GEMINI_API_KEY="your_gemini_api_key_here"
+export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+```
+
+## 📁 Project Structure
+
+```
+satim_grc/
+├── agents/
+│   ├── policy_comparison_agent.py
+│   ├── policy_feedback_agent.py
+│   ├── coordinator.py
+│   └── communication_protocol.py
+├── rag/
+│   ├── query_engine.py
+│   ├── vector_search_service.py
+│   ├── context_builder.py
+│   └── document_loader.py
+├── utils/
+│   ├── logging_config.py
+│   └── rich_output.py
+├── test/
+│   └── test.py
+├── requirements.txt
+└── README.md
+```
+
+## 🤝 Contributing
+
+We welcome contributions to improve the SATIM GRC system. Please follow these guidelines:
 
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Commit your changes: `git commit -m 'Add some feature'`
-4. Push to the branch: `git push origin feature-name`
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
 5. Submit a pull request
 
-## License
+## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
-- Google for providing the Gemini API
-- Facebook Research for FAISS vector search library
-- Material-UI for the frontend components
+This system represents a comprehensive approach to AI-powered compliance analysis, combining the latest advances in LLM technology, RAG systems, and multi-agent architectures to deliver enterprise-grade GRC capabilities.
+
+---
+
+**Built with ❤️ for SATIM by [LyesHADJAR](https://github.com/LyesHADJAR)**
